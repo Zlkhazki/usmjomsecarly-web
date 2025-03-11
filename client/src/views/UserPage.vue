@@ -3,7 +3,6 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import AppSidebar from '../components/AppSidebar.vue';
 import AppHeader from '../components/AppHeader.vue';
-import StatCard from '../components/StatCard.vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Dialog from 'primevue/dialog';
@@ -12,18 +11,19 @@ import Toast from 'primevue/toast';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
 import { useToast } from 'primevue/usetoast';
-import { useRouter } from 'vue-router';
 
 const sidebar = ref(null);
-const router = useRouter();
 const toast = useToast();
 const users = ref([]);
 const loading = ref(false);
 const selectedUser = ref(null);
+const showDeleteConfirm = ref(false);
+const userToDelete = ref(null);
 const showUserDetails = ref(false);
 const filters = ref({
   global: { value: null, matchMode: 'contains' },
-  status: { value: null, matchMode: 'equals' }
+  status: { value: null, matchMode: 'equals' },
+  role: { value: null, matchMode: 'equals' }
 });
 const statusOptions = ref([
   { label: 'All', value: null },
@@ -31,14 +31,12 @@ const statusOptions = ref([
   { label: 'Suspended', value: 'SUSPENDED' },
   { label: 'Pending', value: 'PENDING' }
 ]);
-
-// Mock data for dashboard
-const stats = ref({
-  totalUsers: 256,
-  activeDrivers: 42,
-  completedRides: 189,
-  pendingApprovals: 15
-});
+const roleOptions = ref([
+  { label: 'All', value: null },
+  { label: 'Student', value: 'STUDENT' },
+  { label: 'Driver', value: 'DRIVER' },
+  { label: 'Staff', value: 'STAFF' }
+]);
 
 // Mock user data
 const mockUsers = [
@@ -116,30 +114,6 @@ const toggleSidebar = () => {
   }
 };
 
-const fetchStats = async () => {
-  try {
-    // Comment out the actual API call for now and use mock data
-    /*
-    const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/stats`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    stats.value = response.data;
-    */
-    
-    // Using mock data directly - no action needed as stats is already populated
-    console.log('Using mock stats data');
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to fetch dashboard statistics',
-      life: 3000
-    });
-  }
-};
-
 const fetchUsers = async () => {
   try {
     loading.value = true;
@@ -168,17 +142,99 @@ const fetchUsers = async () => {
   }
 };
 
+const confirmDeleteUser = (userId, userName) => {
+  userToDelete.value = { id: userId, name: userName };
+  showDeleteConfirm.value = true;
+};
+
+const executeDeleteUser = async () => {
+  try {
+    await axios.delete(
+      `${import.meta.env.VITE_API_URL}/admin/users/${userToDelete.value.id}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    await fetchUsers();
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'User deleted successfully',
+      life: 3000
+    });
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to delete user',
+      life: 3000
+    });
+  } finally {
+    showDeleteConfirm.value = false;
+    userToDelete.value = null;
+  }
+};
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false;
+  userToDelete.value = null;
+};
+
 const showDetails = (user) => {
   selectedUser.value = user;
   showUserDetails.value = true;
 };
 
-const goToUserManagement = () => {
-  router.push('/users');
+const updateUserStatus = async (user, newStatus) => {
+  try {
+    await axios.patch(
+      `${import.meta.env.VITE_API_URL}/admin/users/${user.id}/status`,
+      { status: newStatus },
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    await fetchUsers();
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: `User status updated to ${newStatus}`,
+      life: 3000
+    });
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to update user status',
+      life: 3000
+    });
+  }
+};
+
+const statusBodyTemplate = (rowData) => {
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-800';
+      case 'SUSPENDED':
+        return 'bg-red-100 text-red-800';
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return {
+    class: `px-2 py-1 rounded text-sm ${getStatusClass(rowData.status)}`
+  };
 };
 
 onMounted(() => {
-  fetchStats();
   fetchUsers();
 });
 </script>
@@ -192,59 +248,13 @@ onMounted(() => {
         <Toast />
         <div class="w-full h-full">
           <div class="px-6 py-4">
-            <h1 class="text-2xl font-bold text-[#330b4f] mb-6">Dashboard</h1>
+            <h1 class="text-2xl font-bold text-[#330b4f] mb-6">User Management</h1>
             
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-12 gap-4">
-              <div class="col-span-12 md:col-span-6 lg:col-span-3">
-                <StatCard
-                  title="Total Users"
-                  :count="stats.totalUsers"
-                  bgColor="bg-[#330b4f]"
-                  textColor="text-white"
-                  iconClass="pi pi-user-plus"
-                  iconColor="text-[#dec9f9]"
-                />
-              </div>
-              <div class="col-span-12 md:col-span-6 lg:col-span-3">
-                <StatCard
-                  title="Active Drivers"
-                  :count="stats.activeDrivers"
-                  bgColor="bg-[#dec9f9]"
-                  textColor="text-[#330b4f]"
-                  iconClass="pi pi-car"
-                  iconColor="text-[#330b4f]"
-                />
-              </div>
-              <div class="col-span-12 md:col-span-6 lg:col-span-3">
-                <StatCard
-                  title="Completed Rides"
-                  :count="stats.completedRides"
-                  bgColor="bg-[#330b4f]"
-                  textColor="text-white"
-                  iconClass="pi pi-flag-fill"
-                  iconColor="text-[#dec9f9]"
-                />
-              </div>
-              <div class="col-span-12 md:col-span-6 lg:col-span-3">
-                <StatCard
-                  title="Pending Approvals"
-                  :count="stats.pendingApprovals"
-                  bgColor="bg-[#dec9f9]"
-                  textColor="text-[#330b4f]"
-                  iconClass="pi pi-hourglass"
-                  iconColor="text-[#330b4f]"
-                />
-              </div>
-            </div>
-
-            <div class="my-8"></div>
-
-            <!-- Users Table (Read-only version) -->
+            <!-- Users Table -->
             <div class="card bg-white rounded-lg shadow">
-              <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 class="text-xl font-semibold text-[#330b4f]">Recent Users</h2>
-                <div class="flex space-x-2">
+              <div class="p-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
+                <h2 class="text-xl font-semibold text-[#330b4f]">Users</h2>
+                <div class="flex space-x-2 flex-wrap gap-2">
                   <span class="p-input-icon-left">
                     <i class="pi pi-search" />
                     <InputText 
@@ -253,11 +263,21 @@ onMounted(() => {
                       class="p-inputtext-sm border-[#dec9f9] focus:border-[#330b4f]" 
                     />
                   </span>
-                  <Button
-                    icon="pi pi-users"
-                    label="User Management"
-                    class="p-button-outlined p-button-sm"
-                    @click="goToUserManagement"
+                  <Dropdown
+                    v-model="filters.status.value"
+                    :options="statusOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Filter by status"
+                    class="p-inputtext-sm"
+                  />
+                  <Dropdown
+                    v-model="filters.role.value"
+                    :options="roleOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Filter by role"
+                    class="p-inputtext-sm"
                   />
                 </div>
               </div>
@@ -265,7 +285,8 @@ onMounted(() => {
               <DataTable
                 :value="users"
                 :paginator="true"
-                :rows="5"
+                :rows="10"
+                :rowsPerPageOptions="[5, 10, 25]"
                 :loading="loading"
                 v-model:filters="filters"
                 filterDisplay="menu"
@@ -284,6 +305,7 @@ onMounted(() => {
                   </template>
                 </Column>
                 <Column field="email" header="Email" sortable></Column>
+                <Column field="phone" header="Phone"></Column>
                 <Column field="role" header="Role" sortable>
                   <template #body="{ data }">
                     <span class="capitalize">{{ data.role.toLowerCase() }}</span>
@@ -306,15 +328,40 @@ onMounted(() => {
                     {{ new Date(data.createdAt).toLocaleDateString() }}
                   </template>
                 </Column>
-                <Column header="Actions" style="min-width: 6rem">
+                <Column header="Actions" style="min-width: 10rem">
                   <template #body="{ data }">
-                    <Button
-                      icon="pi pi-eye"
-                      class="p-button-rounded p-button-text p-button-sm text-[#330b4f]"
-                      @click="showDetails(data)"
-                      tooltip="View Details"
-                      tooltipOptions="top"
-                    />
+                    <div class="flex space-x-1">
+                      <Button
+                        icon="pi pi-eye"
+                        class="p-button-rounded p-button-text p-button-sm text-[#330b4f]"
+                        @click="showDetails(data)"
+                        tooltip="View Details"
+                        tooltipOptions="top"
+                      />
+                      <Button
+                        icon="pi pi-check"
+                        class="p-button-rounded p-button-text p-button-sm text-green-600"
+                        @click="updateUserStatus(data, 'ACTIVE')"
+                        :disabled="data.status === 'ACTIVE'"
+                        tooltip="Activate"
+                        tooltipOptions="top"
+                      />
+                      <Button
+                        icon="pi pi-ban"
+                        class="p-button-rounded p-button-text p-button-sm text-red-600"
+                        @click="updateUserStatus(data, 'SUSPENDED')"
+                        :disabled="data.status === 'SUSPENDED'"
+                        tooltip="Suspend"
+                        tooltipOptions="top"
+                      />
+                      <Button
+                        icon="pi pi-trash"
+                        class="p-button-rounded p-button-text p-button-sm text-red-600"
+                        @click="confirmDeleteUser(data.id, data.name)"
+                        tooltip="Delete"
+                        tooltipOptions="top"
+                      />
+                    </div>
                   </template>
                 </Column>
               </DataTable>
@@ -323,6 +370,27 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog v-model:visible="showDeleteConfirm" :modal="true" header="Confirm Delete" :style="{width: '450px'}">
+      <div v-if="userToDelete" class="p-4">
+        <p class="mb-4">Are you sure you want to delete user <strong>{{ userToDelete.name }}</strong>? This action cannot be undone.</p>
+      </div>
+      <template #footer>
+        <Button
+          label="No"
+          icon="pi pi-times"
+          class="p-button-text"
+          @click="cancelDelete"
+        />
+        <Button
+          label="Yes"
+          icon="pi pi-check"
+          class="p-button-danger"
+          @click="executeDeleteUser"
+        />
+      </template>
+    </Dialog>
 
     <!-- User Details Dialog -->
     <Dialog v-model:visible="showUserDetails" :modal="true" header="User Details" :style="{width: '650px'}">
@@ -401,19 +469,37 @@ onMounted(() => {
         </div>
       </div>
       <template #footer>
-        <Button
-          icon="pi pi-times"
-          label="Close"
-          class="p-button-text"
-          @click="showUserDetails = false"
-        />
+        <div class="flex justify-between w-full">
+          <div>
+            <Button
+              v-if="selectedUser && selectedUser.status !== 'SUSPENDED'"
+              icon="pi pi-ban"
+              label="Suspend User"
+              class="p-button-danger p-button-outlined"
+              @click="updateUserStatus(selectedUser, 'SUSPENDED')"
+            />
+            <Button
+              v-if="selectedUser && selectedUser.status !== 'ACTIVE'"
+              icon="pi pi-check"
+              label="Activate User"
+              class="p-button-success p-button-outlined"
+              @click="updateUserStatus(selectedUser, 'ACTIVE')"
+            />
+          </div>
+          <Button
+            icon="pi pi-times"
+            label="Close"
+            class="p-button-text"
+            @click="showUserDetails = false"
+          />
+        </div>
       </template>
     </Dialog>
   </div>
 </template>
 
 <style scoped>
-/* You can add component-specific styles here */
+/* Component-specific styles */
 :deep(.p-datatable .p-datatable-thead > tr > th) {
   background-color: #f5f0fa;
   color: #330b4f;

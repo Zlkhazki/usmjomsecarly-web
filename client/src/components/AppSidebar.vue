@@ -35,7 +35,7 @@ const logout = () => {
           <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">Main</div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
-            @click="navigate('/')"
+            @click="navigate('/dashboard')"
           >
             <i class="pi pi-home mr-2"></i>
             <span>Dashboard</span>
