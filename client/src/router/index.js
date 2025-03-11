@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import UserPage from '../views/UserPage.vue'
+import RideManagement from '../views/RideManagement.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,6 +16,12 @@ const router = createRouter({
       path: '/users',
       name: 'users',
       component: UserPage,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/rides',
+      name: 'rides',
+      component: RideManagement,
       meta: { requiresAuth: true }
     }
     // {
