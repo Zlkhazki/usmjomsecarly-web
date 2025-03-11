@@ -28,7 +28,7 @@ const logout = () => {
     <div class="hidden lg:flex flex-col bg-[#330b4f] text-white h-full w-64 shadow-lg">
       <div class="p-5 border-b border-[#4a1572] flex items-center">
         <img src=".\icons\usm-logo.png" alt="USM Jomsecarly" class="h-8 mr-2" />
-        <span class="text-xl font-bold">Jomsecarly</span>
+        <span class="text-xl font-bold">Jom SeCarly</span>
       </div>
       <div class="flex flex-col flex-1 p-4">
         <div class="mb-4">
