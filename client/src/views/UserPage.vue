@@ -255,21 +255,22 @@ onMounted(() => {
               <div class="p-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
                 <h2 class="text-xl font-semibold text-[#330b4f]">Users</h2>
                 <div class="flex space-x-2 flex-wrap gap-2">
-                  <span class="p-input-icon-left">
-                    <i class="pi pi-search" />
-                    <InputText 
-                      v-model="filters.global.value" 
-                      placeholder="Search users..." 
-                      class="p-inputtext-sm border-[#dec9f9] focus:border-[#330b4f]" 
-                    />
-                  </span>
+                  <InputText 
+                    v-model="filters.global.value" 
+                    placeholder="Search users..." 
+                    class="p-inputtext-sm border-[#dec9f9] focus:border-[#330b4f] w-[200px]"
+                  >
+                    <template #prefix>
+                      <i class="pi pi-search" />
+                    </template>
+                  </InputText>
                   <Dropdown
                     v-model="filters.status.value"
                     :options="statusOptions"
                     optionLabel="label"
                     optionValue="value"
                     placeholder="Filter by status"
-                    class="p-inputtext-sm"
+                    class="p-inputtext-sm w-[200px]"
                   />
                   <Dropdown
                     v-model="filters.role.value"
@@ -277,7 +278,7 @@ onMounted(() => {
                     optionLabel="label"
                     optionValue="value"
                     placeholder="Filter by role"
-                    class="p-inputtext-sm"
+                    class="p-inputtext-sm w-[200px]"
                   />
                 </div>
               </div>

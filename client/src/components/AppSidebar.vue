@@ -35,13 +35,15 @@ const logout = () => {
           <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">Main</div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
+            :class="{ 'bg-[#4a1572]': $route.path === '/dashboard' }"
             @click="navigate('/dashboard')"
           >
-            <i class="pi pi-home mr-2"></i>
+            <i class="pi pi-chart-line mr-2"></i>
             <span>Dashboard</span>
           </div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
+            :class="{ 'bg-[#4a1572]': $route.path === '/users' }"
             @click="navigate('/users')"
           >
             <i class="pi pi-users mr-2"></i>
@@ -53,6 +55,7 @@ const logout = () => {
           <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">Rides</div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
+            :class="{ 'bg-[#4a1572]': $route.path === '/rides' }"
             @click="navigate('/rides')"
           >
             <i class="pi pi-car mr-2"></i>
@@ -60,9 +63,10 @@ const logout = () => {
           </div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
+            :class="{ 'bg-[#4a1572]': $route.path === '/bookings' }"
             @click="navigate('/bookings')"
           >
-            <i class="pi pi-calendar mr-2"></i>
+            <i class="pi pi-ticket mr-2"></i>
             <span>Bookings</span>
           </div>
         </div>
@@ -71,17 +75,11 @@ const logout = () => {
           <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">System</div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
-            @click="navigate('/reports')"
+            :class="{ 'bg-[#4a1572]': $route.path === '/feedback' }"
+            @click="navigate('/feedback')"
           >
-            <i class="pi pi-chart-bar mr-2"></i>
-            <span>Reports</span>
-          </div>
-          <div 
-            class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
-            @click="navigate('/settings')"
-          >
-            <i class="pi pi-cog mr-2"></i>
-            <span>Settings</span>
+            <i class="pi pi-comments mr-2"></i>
+            <span>Feedback & Reports</span>
           </div>
         </div>
 
@@ -100,8 +98,8 @@ const logout = () => {
     <!-- Mobile Sidebar -->
     <Sidebar v-model:visible="visible" :dismissable="true" :showCloseIcon="true" class="bg-[#330b4f] text-white">
       <div class="p-5 border-b border-[#4a1572] flex items-center">
-        <img src="../assets/logo.png" alt="USM Jomsecarly" class="h-8 mr-2" />
-        <span class="text-xl font-bold">Jomsecarly</span>
+        <img src=".\icons\usm-logo.png" alt="USM Jomsecarly" class="h-8 mr-2" />
+        <span class="text-xl font-bold">Jom SeCarly</span>
       </div>
       
       <div class="flex flex-col p-4">
@@ -109,13 +107,15 @@ const logout = () => {
           <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">Main</div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
-            @click="navigate('/')"
+            :class="{ 'bg-[#4a1572]': $route.path === '/dashboard' }"
+            @click="navigate('/dashboard')"
           >
-            <i class="pi pi-home mr-2"></i>
+            <i class="pi pi-chart-line mr-2"></i>
             <span>Dashboard</span>
           </div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
+            :class="{ 'bg-[#4a1572]': $route.path === '/users' }"
             @click="navigate('/users')"
           >
             <i class="pi pi-users mr-2"></i>
@@ -127,6 +127,7 @@ const logout = () => {
           <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">Rides</div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
+            :class="{ 'bg-[#4a1572]': $route.path === '/rides' }"
             @click="navigate('/rides')"
           >
             <i class="pi pi-car mr-2"></i>
@@ -134,9 +135,10 @@ const logout = () => {
           </div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
+            :class="{ 'bg-[#4a1572]': $route.path === '/bookings' }"
             @click="navigate('/bookings')"
           >
-            <i class="pi pi-calendar mr-2"></i>
+            <i class="pi pi-ticket mr-2"></i>
             <span>Bookings</span>
           </div>
         </div>
@@ -145,17 +147,11 @@ const logout = () => {
           <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">System</div>
           <div 
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
-            @click="navigate('/reports')"
+            :class="{ 'bg-[#4a1572]': $route.path === '/feedback' }"
+            @click="navigate('/feedback')"
           >
-            <i class="pi pi-chart-bar mr-2"></i>
-            <span>Reports</span>
-          </div>
-          <div 
-            class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
-            @click="navigate('/settings')"
-          >
-            <i class="pi pi-cog mr-2"></i>
-            <span>Settings</span>
+            <i class="pi pi-comments mr-2"></i>
+            <span>Feedback & Reports</span>
           </div>
         </div>
 

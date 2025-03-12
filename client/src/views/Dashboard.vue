@@ -245,12 +245,12 @@ onMounted(() => {
               <div class="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h2 class="text-xl font-semibold text-[#330b4f]">Recent Users</h2>
                 <div class="flex space-x-2">
-                  <span class="p-input-icon-left">
-                    <i class="pi pi-search" />
+                  <span class="p-input-icon-left relative" style="min-width: 250px;">
+                    <i class="pi pi-search absolute left-2.5 top-1/2 transform -translate-y-1/2 z-10 text-gray-500" />
                     <InputText 
                       v-model="filters.global.value" 
                       placeholder="Search users..." 
-                      class="p-inputtext-sm border-[#dec9f9] focus:border-[#330b4f]" 
+                      class="p-inputtext-sm border-[#dec9f9] focus:border-[#330b4f] w-full pl-9" 
                     />
                   </span>
                   <Button
