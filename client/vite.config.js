@@ -13,6 +13,7 @@ export default defineConfig({
         target: "http://localhost:3000", // Replace with your backend server URL
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
   },

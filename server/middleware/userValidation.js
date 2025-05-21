@@ -104,9 +104,9 @@ export const validateUpdateUser = [
 
   body("role_status")
     .optional()
-    .isIn(["active", "inactive", "pending", "suspended"])
+    .isIn(["approved", "inactive", "pending", "suspended"])
     .withMessage(
-      "Role status must be one of: active, inactive, pending, suspended"
+      "Role status must be one of: approved, inactive, pending, suspended"
     ),
 
   // Prevent updating fields that shouldn't be directly modified by admin
@@ -123,4 +123,22 @@ export const validateUpdateUser = [
     .not()
     .exists()
     .withMessage("Cannot directly update user rating"),
+];
+
+// ----- Driver Application Validations -----
+
+// Validate driver application status update
+export const validateUpdateDriverApplicationStatus = [
+  param("id")
+    .isUUID()
+    .withMessage("Driver application ID must be a valid UUID"),
+  body("status")
+    .isIn(["approved", "rejected"])
+    .withMessage("Status must be either 'approved' or 'rejected'"),
+  body("reviewNotes")
+    .optional()
+    .isString()
+    .withMessage("Review notes must be a string")
+    .isLength({ min: 0, max: 1000 })
+    .withMessage("Review notes cannot exceed 1000 characters"),
 ];

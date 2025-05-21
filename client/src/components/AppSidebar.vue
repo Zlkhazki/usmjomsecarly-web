@@ -1,11 +1,11 @@
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import Sidebar from 'primevue/sidebar';
-import Button from 'primevue/button';
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import Drawer from "primevue/drawer";
+import Button from "primevue/button";
 
 defineExpose({
-  visible: ref(false)
+  visible: ref(false),
 });
 
 const visible = ref(false);
@@ -17,26 +17,35 @@ const navigate = (path) => {
 };
 
 const logout = () => {
-  localStorage.removeItem('token');
-  router.push('/login');
+  localStorage.removeItem("token");
+  router.push("/login");
 };
 </script>
 
 <template>
   <div class="h-full">
     <!-- Desktop Sidebar -->
-    <div class="hidden lg:flex flex-col bg-[#330b4f] text-white h-full shadow-lg transition-all duration-300 w-[70px] hover:w-64 group">
-      <div class="p-5 border-b border-[#4a1572] flex items-center overflow-hidden">
+    <div
+      class="hidden lg:flex flex-col bg-[#330b4f] text-white h-full shadow-lg transition-all duration-300 w-[70px] hover:w-64 group"
+    >
+      <div
+        class="p-5 border-b border-[#4a1572] flex items-center overflow-hidden"
+      >
         <img src=".\icons\usm-logo.png" alt="USM Jomsecarly" class="h-8 mr-2" />
-        <span class="text-xl font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">Jom SeCarly</span>
+        <span
+          class="text-xl font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          >Jom SeCarly</span
+        >
       </div>
       <div class="flex flex-col flex-1 p-4">
         <div class="mb-4">
-          <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2 text-center group-hover:text-left transition-all">
+          <div
+            class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2 text-center group-hover:text-left transition-all"
+          >
             <span class="hidden group-hover:inline">Main</span>
             <span class="group-hover:hidden">M</span>
           </div>
-          <div 
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1 justify-center group-hover:justify-start"
             :class="{ 'bg-[#4a1572]': $route.path === '/dashboard' }"
             @click="navigate('/dashboard')"
@@ -44,7 +53,7 @@ const logout = () => {
             <i class="pi pi-chart-line group-hover:mr-2"></i>
             <span class="hidden group-hover:inline">Dashboard</span>
           </div>
-          <div 
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1 justify-center group-hover:justify-start"
             :class="{ 'bg-[#4a1572]': $route.path === '/users' }"
             @click="navigate('/users')"
@@ -55,11 +64,13 @@ const logout = () => {
         </div>
 
         <div class="mb-4">
-          <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2 text-center group-hover:text-left transition-all">
+          <div
+            class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2 text-center group-hover:text-left transition-all"
+          >
             <span class="hidden group-hover:inline">Rides</span>
             <span class="group-hover:hidden">R</span>
           </div>
-          <div 
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1 justify-center group-hover:justify-start"
             :class="{ 'bg-[#4a1572]': $route.path === '/rides' }"
             @click="navigate('/rides')"
@@ -67,7 +78,15 @@ const logout = () => {
             <i class="pi pi-car group-hover:mr-2"></i>
             <span class="hidden group-hover:inline">Ride Management</span>
           </div>
-          <div 
+          <div
+            class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1 justify-center group-hover:justify-start"
+            :class="{ 'bg-[#4a1572]': $route.path === '/driver-applications' }"
+            @click="navigate('/driver-applications')"
+          >
+            <i class="pi pi-id-card group-hover:mr-2"></i>
+            <span class="hidden group-hover:inline">Driver Applications</span>
+          </div>
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1 justify-center group-hover:justify-start"
             :class="{ 'bg-[#4a1572]': $route.path === '/bookings' }"
             @click="navigate('/bookings')"
@@ -78,11 +97,13 @@ const logout = () => {
         </div>
 
         <div class="mb-4">
-          <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2 text-center group-hover:text-left transition-all">
+          <div
+            class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2 text-center group-hover:text-left transition-all"
+          >
             <span class="hidden group-hover:inline">System</span>
             <span class="group-hover:hidden">S</span>
           </div>
-          <div 
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1 justify-center group-hover:justify-start"
             :class="{ 'bg-[#4a1572]': $route.path === '/feedback' }"
             @click="navigate('/feedback')"
@@ -93,7 +114,7 @@ const logout = () => {
         </div>
 
         <div class="mt-auto">
-          <button 
+          <button
             @click="logout"
             class="w-full flex items-center justify-center p-2 bg-[#4a1572] hover:bg-[#5c1a8c] rounded-lg text-white group-hover:justify-start"
           >
@@ -102,19 +123,25 @@ const logout = () => {
           </button>
         </div>
       </div>
-    </div>
-
-    <!-- Mobile Sidebar -->
-    <Sidebar v-model:visible="visible" :dismissable="true" :showCloseIcon="true" class="bg-[#330b4f] text-white">
+    </div>    <!-- Mobile Sidebar -->
+    <Drawer
+      v-model:visible="visible"
+      :dismissable="true"
+      :showCloseIcon="true"
+      class="bg-[#330b4f] text-white"
+      position="left"
+    >
       <div class="p-5 border-b border-[#4a1572] flex items-center">
         <img src=".\icons\usm-logo.png" alt="USM Jomsecarly" class="h-8 mr-2" />
         <span class="text-xl font-bold">Jom SeCarly</span>
       </div>
-      
+
       <div class="flex flex-col p-4">
         <div class="mb-4">
-          <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">Main</div>
-          <div 
+          <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">
+            Main
+          </div>
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
             :class="{ 'bg-[#4a1572]': $route.path === '/dashboard' }"
             @click="navigate('/dashboard')"
@@ -122,7 +149,7 @@ const logout = () => {
             <i class="pi pi-chart-line mr-2"></i>
             <span>Dashboard</span>
           </div>
-          <div 
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
             :class="{ 'bg-[#4a1572]': $route.path === '/users' }"
             @click="navigate('/users')"
@@ -133,8 +160,10 @@ const logout = () => {
         </div>
 
         <div class="mb-4">
-          <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">Rides</div>
-          <div 
+          <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">
+            Rides
+          </div>
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
             :class="{ 'bg-[#4a1572]': $route.path === '/rides' }"
             @click="navigate('/rides')"
@@ -142,7 +171,15 @@ const logout = () => {
             <i class="pi pi-car mr-2"></i>
             <span>Ride Management</span>
           </div>
-          <div 
+          <div
+            class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
+            :class="{ 'bg-[#4a1572]': $route.path === '/driver-applications' }"
+            @click="navigate('/driver-applications')"
+          >
+            <i class="pi pi-id-card mr-2"></i>
+            <span>Driver Applications</span>
+          </div>
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
             :class="{ 'bg-[#4a1572]': $route.path === '/bookings' }"
             @click="navigate('/bookings')"
@@ -153,8 +190,10 @@ const logout = () => {
         </div>
 
         <div class="mb-4">
-          <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">System</div>
-          <div 
+          <div class="text-xs uppercase text-[#dec9f9] tracking-wider mb-2">
+            System
+          </div>
+          <div
             class="flex items-center p-2 rounded-lg hover:bg-[#4a1572] cursor-pointer mb-1"
             :class="{ 'bg-[#4a1572]': $route.path === '/feedback' }"
             @click="navigate('/feedback')"
@@ -165,16 +204,15 @@ const logout = () => {
         </div>
 
         <div class="mt-4">
-          <button 
+          <button
             @click="logout"
             class="w-full flex items-center justify-center p-2 bg-[#4a1572] hover:bg-[#5c1a8c] rounded-lg text-white"
           >
             <i class="pi pi-sign-out mr-2"></i>
-            <span>Logout</span>
-          </button>
+            <span>Logout</span>          </button>
         </div>
       </div>
-    </Sidebar>
+    </Drawer>
   </div>
 </template>
 

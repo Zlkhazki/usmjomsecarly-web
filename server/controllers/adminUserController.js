@@ -370,3 +370,121 @@ export const adminLogin = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get dashboard statistics
+ * @route GET /admin/stats
+ */
+export const getStats = async (req, res) => {
+  try {
+    // Total users
+    const { count: totalUsers, error: totalUsersError } = await supabase
+      .from("users")
+      .select("id", { count: "exact", head: true });
+
+    if (totalUsersError) throw totalUsersError;
+
+    // Active drivers
+    const { count: activeDrivers, error: activeDriversError } = await supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "driver")
+      .eq("role_status", "approved");
+
+    if (activeDriversError) throw activeDriversError;
+
+    // Pending approvals
+    const { count: pendingApprovals, error: pendingApprovalsError } =
+      await supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("role_status", "pending");
+
+    if (pendingApprovalsError) throw pendingApprovalsError;
+
+    // Completed rides from 'rides' table
+    const { count: completedRides, error: ridesError } = await supabase
+      .from("rides")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "ended");
+
+    if (ridesError) throw ridesError;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalUsers: totalUsers || 0,
+        activeDrivers: activeDrivers || 0,
+        pendingApprovals: pendingApprovals || 0,
+        completedRides: completedRides,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve dashboard statistics",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get admin profile
+ * @route GET /admin/profile
+ */
+export const getAdminProfile = async (req, res) => {
+  try {
+    // Assuming req.user.id contains the authenticated admin's ID
+    // This ID usually comes from the token verification middleware (e.g., isAdmin)
+    const adminId = req.user?.id;
+
+    if (!adminId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Admin ID not found in token.",
+      });
+    }
+
+    const { data: adminProfile, error } = await supabase
+      .from("users")
+      .select("id, name, email, role, profile_picture, created_at") // Select specific fields for profile
+      .eq("id", adminId)
+      .eq("role", "admin") // Ensure the user is an admin
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        return res.status(404).json({
+          success: false,
+          message: "Admin profile not found.",
+        });
+      }
+      console.error("Database error fetching admin profile:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to retrieve admin profile",
+        error: error.message,
+      });
+    }
+
+    if (!adminProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin profile not found or user is not an admin.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: adminProfile,
+    });
+  } catch (error) {
+    console.error("Server error fetching admin profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An unexpected error occurred while fetching admin profile",
+      error: error.message,
+    });
+  }
+};

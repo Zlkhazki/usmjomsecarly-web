@@ -84,7 +84,7 @@ const handleLogin = async () => {
 
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}/api/admin/login`,
+      `${import.meta.env.VITE_API_URL}/admin/login`,
       payload // Send the constructed payload object
     );
     console.log("Axios request sent with email:", formData.email); // Log right before/after sending
