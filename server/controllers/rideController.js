@@ -1,6 +1,100 @@
 import supabase from "../config/supabase.js";
 
 /**
+ * Helper function to format ride data for frontend
+ */
+const formatRideForFrontend = (ride) => {
+  // Map database status to frontend status
+  const statusMap = {
+    open: "Scheduled",
+    in_progress: "Active",
+    ended: "Completed",
+    cancelled: "Cancelled",
+  };
+
+  const frontendStatus = statusMap[ride.status] || ride.status;
+
+  // Format driver information
+  const driver = ride.users
+    ? {
+        id: ride.users.id,
+        name: ride.users.name || "Unknown Driver",
+        phone: ride.users.phone_number || "",
+        email: ride.users.email || "",
+        avatar: ride.users.profile_picture || null,
+        rating: ride.users.rating || 4.5,
+        ratingCount: ride.users.total_rides || 0,
+        vehicle: {
+          make: ride.users.car_model
+            ? ride.users.car_model.split(" ")[0]
+            : "Unknown",
+          model: ride.users.car_model
+            ? ride.users.car_model.split(" ").slice(1).join(" ")
+            : "Model",
+          color: "Silver", // Default since not in schema
+          plateNumber: ride.users.plate_number || "N/A",
+        },
+      }
+    : null;
+
+  // Format passengers from bookings
+  const passengers = ride.bookings
+    ? ride.bookings
+        .filter((booking) => booking.status !== "cancelled")
+        .map((booking) => ({
+          id: booking.user_id,
+          name: booking.users?.name || "Unknown Passenger",
+          phone: booking.users?.phone_number || "",
+          email: booking.users?.email || "",
+          avatar: booking.users?.profile_picture || null,
+          fare: booking.fare || 0,
+          paymentStatus: booking.status === "confirmed" ? "Paid" : "Pending",
+          paymentMethod: "DuitNow", // Default since not in schema
+          seatNumber: booking.seat_number,
+          bookingTime: booking.booking_time,
+        }))
+    : [];
+
+  // Calculate individual fare
+  const totalPassengers = passengers.length;
+  const individualFare =
+    totalPassengers > 0
+      ? parseFloat((ride.total_fare / totalPassengers).toFixed(2))
+      : 0;
+
+  // Update passengers with calculated fare
+  passengers.forEach((passenger) => {
+    passenger.fare = individualFare;
+  });
+
+  // Combine date and time for frontend
+  const rideDateTime = new Date(`${ride.date}T${ride.time}`);
+
+  return {
+    id: ride.id,
+    date: rideDateTime,
+    status: frontendStatus,
+    pickup: ride.pickup_address,
+    destination: ride.drop_address,
+    distance: parseFloat(ride.distance || 0).toFixed(1),
+    duration: Math.round(ride.duration || 0),
+    baseFare: parseFloat(ride.base_fare || 0),
+    distanceCharge: parseFloat(ride.distance_fare || 0),
+    durationCharge: parseFloat(ride.duration_fare || 0),
+    serviceFee: 1.0, // Default service fee since not in schema
+    totalFare: parseFloat(ride.total_fare || ride.price || 0),
+    driver: driver,
+    passengers: passengers,
+    seats: ride.seats,
+    preferences: ride.preferences || [],
+    surge: ride.is_surge || false,
+    surgeMultiplier: parseFloat(ride.surge_multiplier || 1.0),
+    createdAt: ride.created_at,
+    updatedAt: ride.updated_at,
+  };
+};
+
+/**
  * Get all rides with optional filtering and pagination
  * @route GET /api/rides
  */
@@ -53,7 +147,7 @@ export const getRides = async (req, res) => {
         updated_at,
         preferences,
         status,
-        users (
+        users!rides_driver_id_fkey (
           id,
           name,
           email,
@@ -68,7 +162,15 @@ export const getRides = async (req, res) => {
           id,
           user_id,
           seat_number,
-          status
+          status,
+          booking_time,
+          users!bookings_user_id_fkey1 (
+            id,
+            name,
+            email,
+            phone_number,
+            profile_picture
+          )
         )
         `,
       { count: "exact" }
@@ -76,7 +178,15 @@ export const getRides = async (req, res) => {
 
     // Apply filters if provided
     if (status) {
-      query = query.eq("status", status);
+      // Map frontend status to database status
+      const statusMap = {
+        Active: "in_progress",
+        Completed: "ended",
+        Scheduled: "open",
+        Cancelled: "cancelled",
+      };
+      const dbStatus = statusMap[status] || status.toLowerCase();
+      query = query.eq("status", dbStatus);
     }
 
     if (driverId) {
@@ -126,7 +236,7 @@ export const getRides = async (req, res) => {
       success: true,
       message: "Rides fetched successfully",
       data: {
-        rides,
+        rides: rides.map(formatRideForFrontend),
         pagination: {
           total: count,
           page: pageNum,
@@ -222,38 +332,11 @@ export const getRideById = async (req, res) => {
       });
     }
 
-    // Calculate the number of active (non-cancelled) bookings
-    const activeBookings = ride.bookings.filter(
-      (booking) => booking.status !== "cancelled"
-    );
-    const passengerCount = activeBookings.length;
-    const totalFare = ride.total_fare || ride.price || 0;
-
-    // Calculate distributed fare per passenger
-    const farePerPassenger =
-      passengerCount > 0
-        ? parseFloat((totalFare / passengerCount).toFixed(2))
-        : 0;
-
-    // Add individual fare to each booking
-    const bookingsWithFare = ride.bookings.map((booking) => ({
-      ...booking,
-      // Only assign fare to active bookings
-      fare: booking.status !== "cancelled" ? farePerPassenger : 0,
-    }));
-
-    // Create a new ride object with the updated bookings
-    const rideWithDistributedFares = {
-      ...ride,
-      bookings: bookingsWithFare,
-      fare_per_passenger: farePerPassenger,
-    };
-
     // Format the response
     return res.status(200).json({
       success: true,
       message: "Ride fetched successfully",
-      data: rideWithDistributedFares,
+      data: formatRideForFrontend(ride),
     });
   } catch (error) {
     console.error("Server error in getRideById:", error);
@@ -446,6 +529,247 @@ export const updateRideStatus = async (req, res) => {
     });
   } catch (error) {
     console.error("Server error in updateRideStatus:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get rides by driver ID
+ * @route GET /api/rides/driver/:driverId
+ */
+export const getRidesByDriver = async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      startDate,
+      endDate,
+      sortBy = "date",
+      order = "desc",
+    } = req.query;
+
+    // Calculate pagination values
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const startIndex = (pageNum - 1) * limitNum;
+
+    // Build query for driver-specific rides
+    let query = supabase
+      .from("rides")
+      .select(
+        `
+        id,
+        driver_id,
+        date,
+        time,
+        pickup_address,
+        pickup_latitude,
+        pickup_longitude,
+        drop_address,
+        drop_latitude,
+        drop_longitude,
+        base_fare,
+        distance,
+        duration,
+        is_surge,
+        distance_fare,
+        duration_fare,
+        surge_multiplier,
+        total_fare,
+        price,
+        seats,
+        created_at,
+        updated_at,
+        preferences,
+        status,
+        users!rides_driver_id_fkey (
+          id,
+          name,
+          email,
+          phone_number,
+          profile_picture,
+          car_model,
+          plate_number,
+          rating,
+          total_rides
+        ),
+        bookings (
+          id,
+          user_id,
+          seat_number,
+          status,
+          booking_time,
+          users!bookings_user_id_fkey1 (
+            id,
+            name,
+            email,
+            phone_number,
+            profile_picture
+          )
+        )
+        `,
+        { count: "exact" }
+      )
+      .eq("driver_id", driverId);
+
+    // Apply additional filters
+    if (status) {
+      const statusMap = {
+        Active: "started",
+        Completed: "ended",
+        Scheduled: "open",
+        Cancelled: "cancelled",
+      };
+      const dbStatus = statusMap[status] || status.toLowerCase();
+      query = query.eq("status", dbStatus);
+    }
+
+    if (startDate && endDate) {
+      query = query.gte("date", startDate).lte("date", endDate);
+    }
+
+    // Apply sorting and pagination
+    query = query.order(sortBy, { ascending: order === "asc" });
+    query = query.range(startIndex, startIndex + limitNum - 1);
+
+    const { data: rides, error, count } = await query;
+
+    if (error) {
+      console.error("Error fetching driver rides:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch driver rides",
+        error: error.message,
+      });
+    }
+
+    // Format rides for frontend
+    const formattedRides = rides.map(formatRideForFrontend);
+
+    return res.status(200).json({
+      success: true,
+      message: "Driver rides fetched successfully",
+      data: {
+        rides: formattedRides,
+        pagination: {
+          total: count,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(count / limitNum),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Server error in getRidesByDriver:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get bookings for a specific ride
+ * @route GET /api/rides/:id/bookings
+ */
+export const getRideBookings = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch bookings for the ride
+    const { data: bookings, error } = await supabase
+      .from("bookings")
+      .select(
+        `
+        id,
+        ride_id,
+        user_id,
+        seat_number,
+        status,
+        booking_time,
+        users!bookings_user_id_fkey1 (
+          id,
+          name,
+          email,
+          phone_number,
+          profile_picture
+        )
+        `
+      )
+      .eq("ride_id", id)
+      .order("seat_number", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching ride bookings:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch ride bookings",
+        error: error.message,
+      });
+    }
+
+    // Also get the ride details to calculate individual fares
+    const { data: ride, error: rideError } = await supabase
+      .from("rides")
+      .select("total_fare, price")
+      .eq("id", id)
+      .single();
+
+    if (rideError) {
+      console.error("Error fetching ride for fare calculation:", rideError);
+    }
+
+    // Format bookings with individual fare calculation
+    const totalFare = ride?.total_fare || ride?.price || 0;
+    const activeBookings = bookings.filter(
+      (booking) => booking.status !== "cancelled"
+    );
+    const farePerPassenger =
+      activeBookings.length > 0
+        ? parseFloat((totalFare / activeBookings.length).toFixed(2))
+        : 0;
+
+    const formattedBookings = bookings.map((booking) => ({
+      id: booking.id,
+      rideId: booking.ride_id,
+      userId: booking.user_id,
+      seatNumber: booking.seat_number,
+      status: booking.status,
+      bookingTime: booking.booking_time,
+      passenger: {
+        id: booking.users?.id,
+        name: booking.users?.name || "Unknown Passenger",
+        email: booking.users?.email || "",
+        phone: booking.users?.phone_number || "",
+        avatar: booking.users?.profile_picture || null,
+      },
+      fare: booking.status !== "cancelled" ? farePerPassenger : 0,
+      paymentMethod: "DuitNow", // Default since not in schema
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: "Ride bookings fetched successfully",
+      data: {
+        bookings: formattedBookings,
+        summary: {
+          totalBookings: bookings.length,
+          activeBookings: activeBookings.length,
+          cancelledBookings: bookings.length - activeBookings.length,
+          totalFare: totalFare,
+          farePerPassenger: farePerPassenger,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Server error in getRideBookings:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
