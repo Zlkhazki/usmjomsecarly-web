@@ -8,169 +8,30 @@
         <Toast />
         <div class="w-full h-full">
           <div class="px-6 py-4">
-            <h1 class="text-2xl font-bold text-[#330b4f] mb-6">Booking Management</h1>
+            <h1 class="text-2xl font-bold text-[#330b4f] mb-6">
+              Booking Management
+            </h1>
 
             <!-- Bookings Table -->
             <div class="card bg-white rounded-lg shadow">
               <div class="p-4 border-b border-gray-200">
-                <div class="flex justify-between items-center flex-wrap gap-4">
-                  <div class="flex items-center gap-4">
-                    <!-- Tab Navigation -->
-                    <div class="flex gap-2">
-                      <Button
-                        v-for="(tab, index) in tabs"
-                        :key="index"
-                        :icon="tab.icon"
-                        :label="tab.label"
-                        :class="{
-                          'p-button-sm': true,
-                          'bg-[#330b4f] text-white hover:bg-[#4a1772]': activeTabIndex === index,
-                          'p-button-outlined text-[#330b4f] hover:bg-[#f5f0fa]': activeTabIndex !== index
-                        }"
-                        @click="activeTabIndex = index"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- Search and Filter -->
-                  <div class="flex space-x-2 flex-wrap gap-2">
-                    <span class="p-input-icon-left inline-block" style="min-width: 250px;">
-                      <i class="pi pi-calendar" style="left: 0.75rem;"/>
-                      <Calendar 
-                        v-model="filters.dateRange" 
-                        selectionMode="range" 
-                        placeholder="Select date range..." 
-                        class="p-inputtext-sm border-[#dec9f9] focus:border-[#330b4f] w-full pl-8"
-                        @date-select="onDateSelect"
-                      />
-                    </span>
-                    <span class="p-input-icon-left inline-block" style="min-width: 250px;">
-                      <i class="pi pi-search" style="left: 0.75rem;"/>
-                      <InputText 
-                        v-model="filters.search" 
-                        placeholder="Search bookings..." 
-                        class="p-inputtext-sm border-[#dec9f9] focus:border-[#330b4f] w-full pl-8"
-                        @input="onSearch"
-                      />
-                    </span>
-                  </div>
-                </div>
+                <BookingFilters
+                  :active-tab-index="activeTabIndex"
+                  :initial-date-range="filters.dateRange"
+                  :initial-search="filters.search"
+                  @tab-change="handleTabChange"
+                  @date-select="handleDateSelect"
+                  @search="handleSearch"
+                />
               </div>
-              
-              <TreeTable
-                :value="treeTableData"
-                :paginator="true"
-                :rows="10"
-                :rowsPerPageOptions="[10, 20, 50]"
+
+              <BookingTable
+                :tree-table-data="treeTableData"
                 :loading="loading"
-                class="p-treetable-lg">
-                
-                <Column field="id" header="ID" :expander="true">
-                  <template #body="{ node }">
-                    <span :class="{'font-semibold': node.data.type === 'ride'}">
-                      {{ node.data.id }}
-                    </span>
-                  </template>
-                </Column>
-      
-                <Column field="name" header="Name">
-                  <template #body="{ node }">
-                    <div class="flex items-center">
-                      <div class="w-8 h-8 rounded-full bg-[#dec9f9] flex items-center justify-center text-[#330b4f] font-semibold mr-2">
-                        {{ getInitials(node.data.name) }}
-                      </div>
-                      <div class="flex-1">
-                        <div>{{ node.data.name }}</div>
-                        <div v-if="node.data.type === 'passenger'" class="text-xs text-gray-500">
-                          Seat {{ node.data.seatNumber }}
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-                </Column>
-      
-                <Column field="vehicle" header="Vehicle">
-                  <template #body="{ node }">
-                    <template v-if="node.data.type === 'ride'">
-                      {{ node.data.vehicle }}
-                      <div class="text-xs text-gray-500">{{ node.data.plateNumber }}</div>
-                    </template>
-                  </template>
-                </Column>
-      
-                <Column field="route" header="Route">
-                  <template #body="{ node }">
-                    <template v-if="node.data.type === 'ride'">
-                      <span class="text-xs">{{ node.data.route }}</span>
-                    </template>
-                  </template>
-                </Column>
-      
-                <Column field="date" header="Date" sortable>
-                  <template #body="{ node }">
-                    {{ new Date(node.data.date).toLocaleDateString() }}
-                  </template>
-                </Column>
-      
-                <Column field="status" header="Status">
-                  <template #body="{ node }">
-                    <template v-if="node.data.type === 'passenger'">
-                      <span :class="{
-                        'px-2 py-1 rounded text-sm': true,
-                        'bg-green-100 text-green-800': node.data.status === 'Confirmed',
-                        'bg-blue-100 text-blue-800': node.data.status === 'Pending',
-                        'bg-yellow-100 text-yellow-800': node.data.status === 'Waiting',
-                        'bg-red-100 text-red-800': node.data.status === 'Cancelled'
-                      }">
-                        {{ node.data.status }}
-                      </span>
-                    </template>
-                  </template>
-                </Column>
-      
-                <Column field="fare" header="Fare">
-                  <template #body="{ node }">
-                    <template v-if="node.data.type === 'ride'">
-                      <div class="font-semibold">Total: RM {{ node.data.totalFare.toFixed(2) }}</div>
-                    </template>
-                    <template v-else>
-                      RM {{ node.data.fare.toFixed(2) }}
-                    </template>
-                  </template>
-                </Column>
-      
-                <Column header="Actions">
-                  <template #body="{ node }">
-                    <template v-if="node.data.type === 'passenger'">
-                      <div class="flex space-x-1">
-                        <Button 
-                          icon="pi pi-eye" 
-                          class="p-button-rounded p-button-text p-button-sm text-[#330b4f]"
-                          @click="viewBookingDetails(findBookingById(node.data.id))"
-                          tooltip="View details"
-                          tooltipOptions="top"
-                        />
-                        <Button 
-                          v-if="node.data.status === 'Pending'"
-                          icon="pi pi-check"
-                          class="p-button-rounded p-button-text p-button-sm text-green-600"
-                          @click="confirmBooking(findBookingById(node.data.id))"
-                          tooltip="Confirm booking"
-                          tooltipOptions="top"
-                        />
-                        <Button 
-                          v-if="['Pending', 'Waiting'].includes(node.data.status)"
-                          icon="pi pi-times"
-                          class="p-button-rounded p-button-text p-button-sm text-red-600"
-                          @click="cancelBooking(findBookingById(node.data.id))"
-                          tooltip="Cancel booking"
-                          tooltipOptions="top"
-                        />
-                      </div>
-                    </template>
-                  </template>
-                </Column>
-              </TreeTable>
+                @view-details="viewBookingDetails"
+                @confirm-booking="confirmBooking"
+                @cancel-booking="cancelBooking"
+              />
             </div>
           </div>
         </div>
@@ -178,191 +39,38 @@
     </div>
 
     <!-- Booking Details Dialog -->
-    <Dialog v-model:visible="bookingDetailsDialog" :style="{ width: '80%' }" header="Booking Details" :modal="true" class="p-dialog-custom">
-      <div v-if="selectedBooking" class="p-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div class="p-4 bg-[#f5f0fa] rounded-lg">
-            <h3 class="text-lg font-semibold mb-2 text-[#330b4f]">Booking Information</h3>
-            <div class="grid grid-cols-2 gap-2">
-              <div class="text-sm text-gray-500">Booking ID:</div>
-              <div>{{ selectedBooking.id }}</div>
-              <div class="text-sm text-gray-500">Date:</div>
-              <div>{{ new Date(selectedBooking.date).toLocaleString() }}</div>
-              <div class="text-sm text-gray-500">Status:</div>
-              <div>
-                <span :class="{
-                  'px-2 py-1 rounded text-sm': true,
-                  'bg-green-100 text-green-800': selectedBooking.status === 'Confirmed',
-                  'bg-blue-100 text-blue-800': selectedBooking.status === 'Pending',
-                  'bg-yellow-100 text-yellow-800': selectedBooking.status === 'Waiting',
-                  'bg-red-100 text-red-800': selectedBooking.status === 'Cancelled'
-                }">
-                  {{ selectedBooking.status }}
-                </span>
-              </div>
-              <div class="text-sm text-gray-500">Seat Number:</div>
-              <div>{{ selectedBooking.seatNumber }}</div>
-              <div class="text-sm text-gray-500">Fare:</div>
-              <div class="font-semibold">RM {{ selectedBooking.fare.toFixed(2) }}</div>
-              <div class="text-sm text-gray-500">Payment Status:</div>
-              <div>
-                <span :class="{
-                  'px-2 py-1 rounded text-sm': true,
-                  'bg-green-100 text-green-800': selectedBooking.paymentStatus === 'Paid',
-                  'bg-yellow-100 text-yellow-800': selectedBooking.paymentStatus === 'Pending'
-                }">
-                  {{ selectedBooking.paymentStatus || 'Pending' }}
-                </span>
-              </div>
-              <div class="text-sm text-gray-500">Payment Method:</div>
-              <div>{{ selectedBooking.paymentMethod || 'Not specified' }}</div>
-            </div>
-          </div>
-
-          <div class="p-4 bg-[#f5f0fa] rounded-lg">
-            <h3 class="text-lg font-semibold mb-2 text-[#330b4f]">Route Information</h3>
-            <div class="grid grid-cols-2 gap-2">
-              <div class="text-sm text-gray-500">Pickup Location:</div>
-              <div>{{ selectedBooking.pickup }}</div>
-              <div class="text-sm text-gray-500">Destination:</div>
-              <div>{{ selectedBooking.destination }}</div>
-              <div class="text-sm text-gray-500">Pickup Time:</div>
-              <div>{{ new Date(selectedBooking.pickupTime).toLocaleTimeString() }}</div>
-              <div class="text-sm text-gray-500">Distance:</div>
-              <div>{{ selectedBooking.distance || 'Not calculated' }} km</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="p-4 bg-[#f5f0fa] rounded-lg">
-            <h3 class="text-lg font-semibold mb-2 text-[#330b4f]">Passenger Information</h3>
-            <div class="flex items-center">
-              <div class="w-12 h-12 rounded-full bg-[#dec9f9] flex items-center justify-center text-[#330b4f] font-semibold mr-3">
-                {{ getInitials(selectedBooking.passenger.name) }}
-              </div>
-              <div>
-                <div class="font-medium">{{ selectedBooking.passenger.name }}</div>
-                <div class="text-sm text-gray-500">{{ selectedBooking.passenger.phone }}</div>
-                <div class="text-sm text-gray-500">{{ selectedBooking.passenger.email }}</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="p-4 bg-[#f5f0fa] rounded-lg">
-            <h3 class="text-lg font-semibold mb-2 text-[#330b4f]">Driver Information</h3>
-            <div class="flex items-center">
-              <div class="w-12 h-12 rounded-full bg-[#dec9f9] flex items-center justify-center text-[#330b4f] font-semibold mr-3">
-                {{ getInitials(selectedBooking.driver.name) }}
-              </div>
-              <div>
-                <div class="font-medium">{{ selectedBooking.driver.name }}</div>
-                <div class="text-sm text-gray-500">{{ selectedBooking.driver.phone }}</div>
-                <div class="flex items-center mt-1">
-                  <i class="pi pi-star-fill text-yellow-400 text-xs mr-1"></i>
-                  <span class="text-sm">{{ selectedBooking.driver.rating }} ({{ selectedBooking.driver.totalRides }} rides)</span>
-                </div>
-              </div>
-            </div>
-            <div class="mt-3">
-              <div class="text-sm text-gray-500">Vehicle:</div>
-              <div>{{ selectedBooking.driver.vehicle.make }} {{ selectedBooking.driver.vehicle.model }} ({{ selectedBooking.driver.vehicle.plateNumber }})</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="p-4 bg-[#f5f0fa] rounded-lg mt-4" v-if="selectedBooking.status !== 'Pending'">
-          <h3 class="text-lg font-semibold mb-2 text-[#330b4f]">Admin Actions</h3>
-          <div class="flex gap-3">
-            <Button 
-              v-if="selectedBooking.status === 'Waiting'" 
-              label="Mark as Confirmed" 
-              icon="pi pi-check"
-              class="p-button-success"
-              @click="confirmBooking(selectedBooking)"
-            />
-            <Button 
-              v-if="selectedBooking.status === 'Waiting' || selectedBooking.status === 'Confirmed'" 
-              label="Cancel Booking" 
-              icon="pi pi-times"
-              class="p-button-danger"
-              @click="cancelBooking(selectedBooking)"
-            />
-            <Button 
-              v-if="selectedBooking.paymentStatus !== 'Paid'" 
-              label="Mark as Paid" 
-              icon="pi pi-credit-card"
-              class="p-button-info"
-              @click="markAsPaid(selectedBooking)"
-            />
-            <Button 
-              label="Contact Passenger" 
-              icon="pi pi-envelope"
-              class="p-button-secondary"
-              @click="contactPassenger(selectedBooking)"
-            />
-          </div>
-        </div>
-      </div>
-    </Dialog>
+    <BookingDetailsDialog
+      :booking="selectedBooking"
+      :ride="selectedRide"
+      :is-visible="bookingDetailsDialog"
+      @update:is-visible="bookingDetailsDialog = $event"
+      @confirm-booking="confirmBooking"
+      @cancel-booking="cancelBooking"
+      @contact-passenger="contactPassenger"
+    />
   </div>
 
-  <OverlayPanel ref="passengersList" class="w-80">
-    <template v-if="selectedRide">
-      <div class="p-3">
-        <h3 class="text-lg font-semibold mb-2 text-[#330b4f]">
-          Ride Details
-        </h3>
-        <div class="mb-3">
-          <div class="text-sm text-gray-600">{{ new Date(selectedRide.date).toLocaleDateString() }} at {{ new Date(selectedRide.pickupTime).toLocaleTimeString() }}</div>
-          <div class="text-sm font-medium">{{ selectedRide.pickup }} → {{ selectedRide.destination }}</div>
-        </div>
-        
-        <Divider />
-        
-        <h4 class="font-medium mb-2">Passengers ({{ selectedRide.bookings.length }})</h4>
-        <div class="space-y-2">
-          <div v-for="booking in selectedRide.bookings" :key="booking.id" 
-               class="flex items-center p-2 rounded hover:bg-gray-50">
-            <div class="w-8 h-8 rounded-full bg-[#dec9f9] flex items-center justify-center text-[#330b4f] font-semibold mr-2">
-              {{ getInitials(booking.passenger.name) }}
-            </div>
-            <div class="flex-1">
-              <div class="font-medium text-sm">{{ booking.passenger.name }}</div>
-              <div class="text-xs text-gray-500">Seat {{ booking.seatNumber }}</div>
-            </div>
-            <span :class="{
-              'px-2 py-1 rounded text-xs': true,
-              'bg-green-100 text-green-800': booking.status === 'Confirmed',
-              'bg-blue-100 text-blue-800': booking.status === 'Pending',
-              'bg-yellow-100 text-yellow-800': booking.status === 'Waiting',
-              'bg-red-100 text-red-800': booking.status === 'Cancelled'
-            }">
-              {{ booking.status }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </template>
-  </OverlayPanel>
+  <!-- Passengers List Overlay -->
+  <PassengersList ref="passengersList" :ride="selectedRide" />
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, computed } from 'vue';
-import AppSidebar from '../components/AppSidebar.vue';
-import AppHeader from '../components/AppHeader.vue';
-import Calendar from 'primevue/calendar';
-import InputText from 'primevue/inputtext';
-import Button from 'primevue/button';
-import TreeTable from 'primevue/treetable';
-import Column from 'primevue/column';
-import Dialog from 'primevue/dialog';
-import Divider from 'primevue/divider';
-import Toast from 'primevue/toast';
-import ConfirmDialog from 'primevue/confirmdialog';
-import OverlayPanel from 'primevue/overlaypanel';
-import { useToast } from 'primevue/usetoast';
-import { useConfirm } from 'primevue/useconfirm';
+import { ref, onMounted, reactive, computed } from "vue";
+import { useToast } from "primevue/usetoast";
+import { useConfirm } from "primevue/useconfirm";
+import axios from "axios";
+
+// Import components
+import AppSidebar from "../components/AppSidebar.vue";
+import AppHeader from "../components/AppHeader.vue";
+import Toast from "primevue/toast";
+import ConfirmDialog from "primevue/confirmdialog";
+
+// Import refactored components
+import BookingFilters from "../components/booking/BookingFilters.vue";
+import BookingTable from "../components/booking/BookingTable.vue";
+import BookingDetailsDialog from "../components/booking/BookingDetailsDialog.vue";
+import PassengersList from "../components/booking/PassengersList.vue";
 
 // Component state
 const sidebar = ref(null);
@@ -380,117 +88,312 @@ const selectedRide = ref(null);
 // Filters
 const filters = reactive({
   dateRange: null,
-  search: ''
+  search: "",
 });
 
 // DataTable filters
 const dtFilters = ref({
-  global: { value: null, matchMode: 'contains' },
-  'passenger.name': { value: null, matchMode: 'contains' },
-  'driver.name': { value: null, matchMode: 'contains' }
+  global: { value: null, matchMode: "contains" },
+  "passenger.name": { value: null, matchMode: "contains" },
+  "driver.name": { value: null, matchMode: "contains" },
 });
+
+// Event handlers for BookingFilters component
+const handleTabChange = (index) => {
+  activeTabIndex.value = index;
+  fetchBookings();
+};
+
+const handleDateSelect = (dateRange) => {
+  filters.dateRange = dateRange;
+  fetchBookings();
+};
+
+const handleSearch = (search) => {
+  filters.search = search;
+  dtFilters.value.global.value = search;
+  fetchBookings();
+};
 
 // Tab menu
 const tabs = [
-  { label: 'All Bookings', icon: 'pi pi-fw pi-ticket' },
-  { label: 'Confirmed', icon: 'pi pi-fw pi-check-circle' },
-  { label: 'Pending', icon: 'pi pi-fw pi-clock' },
-  { label: 'Cancelled', icon: 'pi pi-fw pi-times-circle' }
+  { label: "All Bookings", icon: "pi pi-fw pi-ticket" },
+  { label: "Confirmed", icon: "pi pi-fw pi-check-circle" },
+  { label: "Pending", icon: "pi pi-fw pi-clock" },
+  { label: "Cancelled", icon: "pi pi-fw pi-times-circle" },
 ];
 
 // Helper functions
 const getInitials = (name) => {
   return name
-    .split(' ')
-    .map(part => part.charAt(0))
-    .join('')
+    .split(" ")
+    .map((part) => part.charAt(0))
+    .join("")
     .toUpperCase();
 };
 
 // Methods
-const viewBookingDetails = (booking) => {
-  selectedBooking.value = booking;
-  bookingDetailsDialog.value = true;
+const viewBookingDetails = (bookingId) => {
+  const booking = findBookingById(bookingId);
+  if (booking) {
+    selectedBooking.value = booking;
+    selectedRide.value = getRideById(booking.rideId);
+    bookingDetailsDialog.value = true;
+  }
 };
 
 const confirmBooking = (booking) => {
   confirm.require({
     message: `Are you sure you want to confirm booking ${booking.id}?`,
-    header: 'Confirm Action',
-    icon: 'pi pi-check-circle',
-    accept: () => {
-      // In a real app, you would call your API here
-      toast.add({
-        severity: 'success',
-        summary: 'Booking Confirmed',
-        detail: `Booking ${booking.id} has been confirmed`,
-        life: 3000
-      });
-      
-      // Update booking status locally
-      booking.status = 'Confirmed';
-      
-      // Close dialog if it's open
-      if (bookingDetailsDialog.value) {
-        bookingDetailsDialog.value = false;
+    header: "Confirm Action",
+    icon: "pi pi-check-circle",
+    accept: async () => {
+      try {
+        // Get the authentication token from localStorage
+        const token = localStorage.getItem("token");
+
+        // Call the API to update booking status
+        const response = await axios.put(
+          `http://localhost:3000/api/bookings/${booking.id}/status`,
+          { status: "confirmed" },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.success) {
+          toast.add({
+            severity: "success",
+            summary: "Booking Confirmed",
+            detail: `Booking ${booking.id} has been confirmed`,
+            life: 3000,
+          });
+
+          // Update booking status locally
+          booking.status = "Confirmed";
+
+          // Refresh bookings data
+          fetchBookings();
+
+          // Close dialog if it's open
+          if (bookingDetailsDialog.value) {
+            bookingDetailsDialog.value = false;
+          }
+        } else {
+          toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: response.data.message || "Failed to confirm booking",
+            life: 3000,
+          });
+        }
+      } catch (error) {
+        console.error("Error confirming booking:", error);
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: error.response?.data?.message || "Failed to confirm booking",
+          life: 3000,
+        });
       }
-    }
+    },
   });
 };
 
 const cancelBooking = (booking) => {
   confirm.require({
     message: `Are you sure you want to cancel booking ${booking.id}?`,
-    header: 'Confirm Cancellation',
-    icon: 'pi pi-exclamation-triangle',
-    accept: () => {
-      // In a real app, you would call your API here
-      toast.add({
-        severity: 'info',
-        summary: 'Booking Cancelled',
-        detail: `Booking ${booking.id} has been cancelled`,
-        life: 3000
-      });
-      
-      // Update booking status locally
-      booking.status = 'Cancelled';
-      
-      // Close dialog if it's open
-      if (bookingDetailsDialog.value) {
-        bookingDetailsDialog.value = false;
+    header: "Confirm Cancellation",
+    icon: "pi pi-exclamation-triangle",
+    accept: async () => {
+      try {
+        // Get the authentication token from localStorage
+        const token = localStorage.getItem("token");
+
+        // Call the API to update booking status
+        const response = await axios.put(
+          `http://localhost:3000/api/bookings/${booking.id}/status`,
+          { status: "cancelled" },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.success) {
+          toast.add({
+            severity: "info",
+            summary: "Booking Cancelled",
+            detail: `Booking ${booking.id} has been cancelled`,
+            life: 3000,
+          });
+
+          // Update booking status locally
+          booking.status = "Cancelled";
+
+          // Refresh bookings data
+          fetchBookings();
+
+          // Close dialog if it's open
+          if (bookingDetailsDialog.value) {
+            bookingDetailsDialog.value = false;
+          }
+        } else {
+          toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: response.data.message || "Failed to cancel booking",
+            life: 3000,
+          });
+        }
+      } catch (error) {
+        console.error("Error cancelling booking:", error);
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: error.response?.data?.message || "Failed to cancel booking",
+          life: 3000,
+        });
       }
-    }
+    },
   });
 };
 
-const markAsPaid = (booking) => {
-  confirm.require({
-    message: `Are you sure you want to mark booking ${booking.id} as paid?`,
-    header: 'Confirm Payment',
-    icon: 'pi pi-check-circle',
-    accept: () => {
-      // In a real app, you would call your API here
-      toast.add({
-        severity: 'success',
-        summary: 'Payment Updated',
-        detail: `Payment for booking ${booking.id} has been marked as paid`,
-        life: 3000
-      });
-      
-      // Update payment status locally
-      booking.paymentStatus = 'Paid';
-    }
-  });
-};
+// Payment functionality removed
 
 const contactPassenger = (booking) => {
-  // In a real app, this would open email or messaging interface
-  toast.add({
-    severity: 'info',
-    summary: 'Contact Initiated',
-    detail: `Opening messaging interface for ${booking.passenger.name}`,
-    life: 3000
-  });
+  // Create refs for email subject and message
+  const emailSubject = ref("");
+  const emailMessage = ref("");
+
+  // Create a dialog ref
+  const contactDialog = ref(false);
+
+  // Show the dialog
+  contactDialog.value = true;
+
+  // Define send email function
+  const sendEmail = async () => {
+    if (!emailSubject.value || !emailMessage.value) {
+      toast.add({
+        severity: "warn",
+        summary: "Warning",
+        detail: "Please provide both subject and message",
+        life: 3000,
+      });
+      return;
+    }
+
+    try {
+      // Get the authentication token from localStorage
+      const token = localStorage.getItem("token");
+
+      // Call the API to send email
+      const response = await axios.post(
+        `http://localhost:3000/api/bookings/${booking.id}/contact`,
+        {
+          subject: emailSubject.value,
+          message: emailMessage.value,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast.add({
+          severity: "success",
+          summary: "Email Sent",
+          detail: `Email has been sent to ${booking.passenger.name}`,
+          life: 3000,
+        });
+        contactDialog.value = false;
+      } else {
+        toast.add({
+          severity: "error",
+          summary: "Error",
+          detail: response.data.message || "Failed to send email",
+          life: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: error.response?.data?.message || "Failed to send email",
+        life: 3000,
+      });
+    }
+  };
+
+  // You would need a separate modal component or a more direct approach
+  // For simplicity, we'll just use a simple prompt here
+  const subject = prompt(
+    `Subject for message to ${booking.passenger.name}:`,
+    ""
+  );
+  const message = prompt("Message content:", "");
+
+  if (subject && message) {
+    // Call the API
+    try {
+      // Get the authentication token from localStorage
+      const token = localStorage.getItem("token");
+
+      // Call the API to send email
+      axios
+        .post(
+          `http://localhost:3000/api/bookings/${booking.id}/contact`,
+          {
+            subject,
+            message,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        )
+        .then((response) => {
+          if (response.data.success) {
+            toast.add({
+              severity: "success",
+              summary: "Email Sent",
+              detail: `Email has been sent to ${booking.passenger.name}`,
+              life: 3000,
+            });
+          }
+        })
+        .catch((error) => {
+          toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: error.response?.data?.message || "Failed to send email",
+            life: 3000,
+          });
+        });
+    } catch (error) {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to send email",
+        life: 3000,
+      });
+    }
+  } else {
+    toast.add({
+      severity: "info",
+      summary: "Cancelled",
+      detail: "Email was not sent",
+      life: 3000,
+    });
+  }
 };
 
 const onDateSelect = () => {
@@ -514,7 +417,17 @@ const getRideById = (rideId) => {
   // In a real app, you would fetch this from your API
   // For now, we'll find it in our generated data
   const rides = bookings.value.reduce((acc, booking) => {
-    if (!acc.find(r => r.id === booking.rideId)) {
+    if (!acc.find((r) => r.id === booking.rideId)) {
+      const rideBookings = bookings.value.filter(
+        (b) => b.rideId === booking.rideId
+      );
+
+      // Calculate the total fare as the sum of all active passengers' fares
+      const activeBookings = rideBookings.filter(
+        (b) => b.status !== "Cancelled"
+      );
+      const totalFare = activeBookings.reduce((sum, b) => sum + b.fare, 0);
+
       acc.push({
         id: booking.rideId,
         driver: booking.driver,
@@ -522,185 +435,240 @@ const getRideById = (rideId) => {
         pickupTime: booking.pickupTime,
         pickup: booking.pickup,
         destination: booking.destination,
-        bookings: bookings.value.filter(b => b.rideId === booking.rideId)
+        totalFare: totalFare,
+        passengerCount: activeBookings.length,
+        individualFare:
+          activeBookings.length > 0 ? totalFare / activeBookings.length : 0,
+        bookings: rideBookings,
       });
     }
     return acc;
   }, []);
-  
-  return rides.find(r => r.id === rideId);
+
+  return rides.find((r) => r.id === rideId);
 };
 
-// Mock data fetching - replace with actual API calls
-const fetchBookings = () => {
+// Fetch bookings from the API
+const fetchBookings = async () => {
   loading.value = true;
-  setTimeout(() => {
-    const mockData = generateMockBookings(20);
-    bookings.value = mockData;
-    treeTableData.value = transformToTreeData(mockData);
+  try {
+    // Prepare query parameters
+    let queryParams = new URLSearchParams();
+
+    // Add date range filter if selected
+    if (filters.dateRange && filters.dateRange[0] && filters.dateRange[1]) {
+      const startDate = new Date(filters.dateRange[0])
+        .toISOString()
+        .split("T")[0];
+      const endDate = new Date(filters.dateRange[1])
+        .toISOString()
+        .split("T")[0];
+      queryParams.append("startDate", startDate);
+      queryParams.append("endDate", endDate);
+    }
+
+    // Add status filter based on active tab
+    if (activeTabIndex.value === 1) {
+      queryParams.append("status", "confirmed");
+    } else if (activeTabIndex.value === 2) {
+      queryParams.append("status", "pending");
+    } else if (activeTabIndex.value === 3) {
+      queryParams.append("status", "cancelled");
+    }
+
+    // Add search query if provided
+    if (filters.search) {
+      queryParams.append("search", filters.search);
+    }
+
+    // Get the authentication token from localStorage
+    const token = localStorage.getItem("token");
+
+    // Make the API request
+    const response = await axios.get(
+      `http://localhost:3000/api/bookings?${queryParams.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.data.success) {
+      // Format the bookings data
+      const bookingsData = response.data.bookings || [];      if (bookingsData.length === 0) {
+        console.log("No bookings data found");
+        bookings.value = [];
+        treeTableData.value = [];
+        toast.add({
+          severity: "info",
+          summary: "No Bookings",
+          detail: "No booking records found with the current filters",
+          life: 3000,
+        });
+      } else {
+        const formattedBookings = bookingsData
+          .map((booking) => formatBookingFromApi(booking))
+          .filter((booking) => booking !== null); // Filter out any null results
+        bookings.value = formattedBookings;
+        treeTableData.value = transformToTreeData(formattedBookings);
+      }
+    } else {
+      toast.add({
+        severity: "error",
+        summary: "Error",
+        detail: "Failed to fetch bookings",
+        life: 3000,
+      });      // Set empty data when API call fails
+      bookings.value = [];
+      treeTableData.value = [];
+    }
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    toast.add({
+      severity: "error",
+      summary: "Error",
+      detail: error.response?.data?.message || "Failed to fetch bookings",
+      life: 3000,
+    });    // Set empty data when API call throws an error
+    bookings.value = [];
+    treeTableData.value = [];
+  } finally {
     loading.value = false;
-  }, 500);
+  }
 };
 
-// Generate mock data for demo purposes
-function generateMockBookings(count) {
-  const mockBookings = [];
-  const statuses = ['Confirmed', 'Pending', 'Waiting', 'Cancelled'];
-  const locations = ['USM Main Campus', 'Engineering Campus', 'Health Campus', 'Penang Airport', 'Georgetown', 'Bayan Lepas', 'Butterworth'];
-  const paymentMethods = ['DuitNow', 'Cash', 'Credit Card', 'E-Wallet'];
-  
-  const drivers = [
-    { 
-      id: 'D001',
-      name: 'Ahmad Bin Abdullah',
-      phone: '012-3456789',
-      rating: 4.8,
-      totalRides: 152,
-      vehicle: { 
-        make: 'Toyota', 
-        model: 'Vios', 
-        plateNumber: 'WXY 1234',
-        capacity: 4 
-      }
+// Format booking data from API response
+const formatBookingFromApi = (apiBooking) => {
+  // Check if the booking has the required properties
+  if (!apiBooking || !apiBooking.id) {
+    console.error("Invalid booking data:", apiBooking);
+    return null;
+  }
+
+  // Safely access nested properties
+  const ride = apiBooking.rides || {};
+  const passenger = apiBooking.users || {};
+  const driver = ride.users || {};
+
+  // Get the distributed fare from the API response or calculate it
+  const distributedFare =
+    apiBooking.distributed_fare ||
+    (ride.total_fare ? ride.total_fare / 1 : ride.price || 0);
+  return {
+    id: apiBooking.id,
+    rideId: ride.id || "N/A",
+    date: ride.date ? new Date(ride.date) : new Date(),
+    pickupTime:
+      ride.date && ride.time
+        ? `${ride.date}T${ride.time}`
+        : new Date().toISOString(),
+    status: capitalize(apiBooking.status || "pending"),
+    pickup: ride.pickup_address || "Not specified",
+    destination: ride.drop_address || "Not specified",
+    seatNumber: apiBooking.seat_number || 1,
+    fare: distributedFare, // Use the distributed fare instead of the total price
+    distance: ride.distance || 0,
+    driver: {
+      id: driver.id || "N/A",
+      name: driver.name || "Unknown Driver",
+      phone: driver.phone_number || "N/A",
+      email: driver.email || "N/A",
+      rating: driver.rating || 4.5,
+      totalRides: driver.total_rides || 0,
+      vehicle: {
+        make: driver.car_model
+          ? driver.car_model.split(" ")[0] || "Unknown"
+          : "Unknown",
+        model: driver.car_model
+          ? driver.car_model.split(" ").slice(1).join(" ") || "Vehicle"
+          : "Vehicle",
+        plateNumber: driver.plate_number || "N/A",
+        capacity: ride.seats || 4,
+      },
     },
-    { 
-      id: 'D002',
-      name: 'Tan Wei Ming',
-      phone: '019-8765432',
-      rating: 4.6,
-      totalRides: 98,
-      vehicle: { 
-        make: 'Honda', 
-        model: 'City', 
-        plateNumber: 'PQR 5678',
-        capacity: 4 
-      }
-    }
-  ];
+    passenger: {
+      id: passenger.id || "N/A",
+      name: passenger.name || "Unknown Passenger",
+      phone: passenger.phone_number || "N/A",
+      email: passenger.email || "N/A",
+    },
+  };
+};
 
-  // Generate multiple rides for each driver
-  const rides = [];
-  for (let i = 0; i < Math.ceil(count / 3); i++) { // Create enough rides to accommodate all bookings
-    for (const driver of drivers) {
-      const date = new Date();
-      date.setDate(date.getDate() + Math.floor(Math.random() * 7));
-      const pickupTime = new Date(date);
-      pickupTime.setHours(7 + Math.floor(Math.random() * 12), Math.floor(Math.random() * 60));
-      
-      const pickup = locations[Math.floor(Math.random() * locations.length)];
-      let destination;
-      do {
-        destination = locations[Math.floor(Math.random() * locations.length)];
-      } while (destination === pickup);
-
-      rides.push({
-        id: 'R' + String(Math.floor(Math.random() * 10000)).padStart(4, '0'),
-        driver: { ...driver }, // Clone driver object
-        date: date,
-        pickupTime: pickupTime,
-        pickup: pickup,
-        destination: destination,
-        availableSeats: driver.vehicle.capacity,
-        bookings: []
-      });
-    }
-  }
-
-  const passengers = [
-    { id: 'P001', name: 'Sarah Lee', phone: '016-7890123', email: 'sarah.lee@student.usm.my' },
-    { id: 'P002', name: 'Raj Kumar', phone: '013-4567890', email: 'raj.kumar@student.usm.my' },
-    { id: 'P003', name: 'Nurul Aina', phone: '014-5678901', email: 'nurul.aina@student.usm.my' },
-    { id: 'P004', name: 'John Doe', phone: '011-2223344', email: 'john.doe@student.usm.my' },
-    { id: 'P005', name: 'Mary Jane', phone: '012-8899001', email: 'mary.jane@student.usm.my' }
-  ];
-
-  // Create bookings and assign them to rides
-  for (let i = 1; i <= count; i++) {
-    // Find a ride that has available seats
-    const availableRides = rides.filter(ride => ride.availableSeats > 0);
-    if (availableRides.length === 0) break; // Stop if no rides available
-    
-    const ride = availableRides[Math.floor(Math.random() * availableRides.length)];
-    const passenger = passengers[Math.floor(Math.random() * passengers.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    
-    const paymentStatus = status === 'Confirmed' ? 
-      (Math.random() > 0.2 ? 'Paid' : 'Pending') : 
-      (Math.random() > 0.7 ? 'Paid' : 'Pending');
-    
-    const paymentMethod = paymentStatus === 'Paid' ? 
-      paymentMethods[Math.floor(Math.random() * paymentMethods.length)] : 
-      (Math.random() > 0.5 ? paymentMethods[Math.floor(Math.random() * paymentMethods.length)] : null);
-
-    const booking = {
-      id: 'B' + String(i).padStart(6, '0'),
-      rideId: ride.id,
-      date: ride.date,
-      pickupTime: ride.pickupTime,
-      status: status,
-      pickup: ride.pickup,
-      destination: ride.destination,
-      seatNumber: ride.driver.vehicle.capacity - ride.availableSeats + 1,
-      fare: 15 + Math.random() * 20, // Remove toFixed here to keep it as a number
-      paymentStatus: paymentStatus,
-      paymentMethod: paymentMethod,
-      driver: ride.driver,
-      passenger: passenger
-    };
-
-    ride.bookings.push(booking);
-    ride.availableSeats--;
-    mockBookings.push(booking);
-  }
-  
-  return mockBookings;
-}
+// Helper function to capitalize first letter
+const capitalize = (str) => {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
 
 // Transform bookings into tree structure
 const transformToTreeData = (bookingsData) => {
   const rideMap = new Map();
-  
+
+  // Filter out null or invalid bookings
+  const validBookings = bookingsData.filter(
+    (booking) => booking && booking.id && booking.rideId
+  );
+
+  // Group bookings by ride and count active passengers per ride
+  const ridePassengerCounts = validBookings.reduce((acc, booking) => {
+    if (!acc[booking.rideId]) {
+      acc[booking.rideId] = 0;
+    }
+    // Only count non-cancelled bookings
+    if (booking.status !== "Cancelled") {
+      acc[booking.rideId]++;
+    }
+    return acc;
+  }, {});
+
   // First group bookings by ride
-  bookingsData.forEach(booking => {
+  validBookings.forEach((booking) => {
     if (!rideMap.has(booking.rideId)) {
       rideMap.set(booking.rideId, {
         key: booking.rideId,
         data: {
           id: booking.rideId,
-          name: booking.driver.name,
-          vehicle: `${booking.driver.vehicle.make} ${booking.driver.vehicle.model}`,
-          plateNumber: booking.driver.vehicle.plateNumber,
-          route: `${booking.pickup} → ${booking.destination}`,
-          date: booking.date,
+          name: booking.driver?.name || "Unknown Driver",
+          vehicle: booking.driver?.vehicle
+            ? `${booking.driver.vehicle.make} ${booking.driver.vehicle.model}`
+            : "N/A",
+          plateNumber: booking.driver?.vehicle?.plateNumber || "N/A",
+          route: `${booking.pickup || "Unknown"} → ${
+            booking.destination || "Unknown"
+          }`,
+          date: booking.date || new Date(),
           totalFare: 0,
-          type: 'ride'
+          passengerCount: ridePassengerCounts[booking.rideId] || 1,
+          type: "ride",
         },
-        children: []
+        children: [],
       });
-    }
-    
-    // Add passenger as child
+    } // Add passenger as child
     const ride = rideMap.get(booking.rideId);
     ride.children.push({
       key: booking.id,
       data: {
         id: booking.id,
-        name: booking.passenger.name,
-        vehicle: '',
-        plateNumber: '',
-        route: '',
-        date: booking.date,
-        status: booking.status,
-        seatNumber: booking.seatNumber,
-        fare: booking.fare,
-        type: 'passenger'
-      }
+        name: booking.passenger?.name || "Unknown Passenger",
+        vehicle: "",
+        plateNumber: "",
+        route: "",
+        date: booking.date || new Date(),
+        status: booking.status || "Pending",
+        seatNumber: booking.seatNumber || 1,
+        fare: booking.status !== "Cancelled" ? booking.fare || 0 : 0, // Zero fare for cancelled bookings
+        type: "passenger",
+      },
     });
-    
-    // Update total fare
-    ride.data.totalFare += booking.fare;
+
+    // Update total fare (only for non-cancelled bookings)
+    if (booking.status !== "Cancelled") {
+      ride.data.totalFare += booking.fare || 0;
+    }
   });
-  
+
   return Array.from(rideMap.values());
 };
 
@@ -709,18 +677,18 @@ const filteredBookings = computed(() => {
   if (activeTabIndex.value === 0) {
     return bookings.value;
   } else if (activeTabIndex.value === 1) {
-    return bookings.value.filter(booking => booking.status === 'Confirmed');
+    return bookings.value.filter((booking) => booking.status === "Confirmed");
   } else if (activeTabIndex.value === 2) {
-    return bookings.value.filter(booking => booking.status === 'Pending');
+    return bookings.value.filter((booking) => booking.status === "Pending");
   } else if (activeTabIndex.value === 3) {
-    return bookings.value.filter(booking => booking.status === 'Cancelled');
+    return bookings.value.filter((booking) => booking.status === "Cancelled");
   }
   return bookings.value;
 });
 
 // Add helper method to find booking by ID
 const findBookingById = (id) => {
-  return bookings.value.find(b => b.id === id);
+  return bookings.value.find((b) => b.id === id);
 };
 
 // Lifecycle hooks

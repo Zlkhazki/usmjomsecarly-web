@@ -477,7 +477,8 @@ const confirmAction = (application, action) => {
 // Update application status
 const updateApplicationStatus = async (applicationId, action) => {
   const token = localStorage.getItem("token");
-  loading.value = true;  try {
+  loading.value = true;
+  try {
     const response = await axios.put(
       `${
         import.meta.env.VITE_API_URL

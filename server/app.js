@@ -1,5 +1,7 @@
 import express from "express"; // Changed from require to import
 import adminRoutes from "./routes/adminRoutes.js"; // Import admin routes
+import bookingRoutes from "./routes/bookingRoutes.js"; // Import booking routes
+import rideRoutes from "./routes/rideRoutes.js"; // Import ride routes
 
 const app = express();
 const PORT = 3000;
@@ -22,6 +24,10 @@ app.get("/", (req, res) => {
 
 // Mount the admin routes
 app.use("/api/admin", adminRoutes); // Prefixed with /api for clarity
+
+// Mount the booking and ride routes
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/rides", rideRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is listening at http://localhost:${PORT}`);
