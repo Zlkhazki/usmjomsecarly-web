@@ -1,20 +1,20 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = "http://localhost:3000/api";
 
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,18 +29,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error Details:', {
+    console.error("API Error Details:", {
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
       url: error.config?.url,
       method: error.config?.method,
-      headers: error.config?.headers
+      headers: error.config?.headers,
     });
     if (error.response?.status === 401) {
       // Handle unauthorized access
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      localStorage.removeItem("token");
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }
@@ -51,12 +51,12 @@ export const ratingsService = {
   async getRideRatings(filters = {}) {
     try {
       const params = new URLSearchParams();
-      
+
       // Add pagination and sorting
-      if (filters.page) params.append('page', filters.page);
-      if (filters.limit) params.append('limit', filters.limit);
-      if (filters.sortBy) params.append('sortBy', filters.sortBy);
-      if (filters.order) params.append('order', filters.order);
+      if (filters.page) params.append("page", filters.page);
+      if (filters.limit) params.append("limit", filters.limit);
+      if (filters.sortBy) params.append("sortBy", filters.sortBy);
+      if (filters.order) params.append("order", filters.order);
 
       const response = await api.get(`/ratings?${params.toString()}`);
       return {
@@ -66,7 +66,7 @@ export const ratingsService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to fetch ratings',
+        message: error.response?.data?.message || "Failed to fetch ratings",
         error: error.response?.data?.error || error.message,
       };
     }
@@ -76,10 +76,12 @@ export const ratingsService = {
   async getRideRatingsByDriver(driverId, filters = {}) {
     try {
       const params = new URLSearchParams();
-      if (filters.page) params.append('page', filters.page);
-      if (filters.limit) params.append('limit', filters.limit);
+      if (filters.page) params.append("page", filters.page);
+      if (filters.limit) params.append("limit", filters.limit);
 
-      const response = await api.get(`/ratings/driver/${driverId}?${params.toString()}`);
+      const response = await api.get(
+        `/ratings/driver/${driverId}?${params.toString()}`
+      );
       return {
         success: true,
         data: response.data.data,
@@ -87,7 +89,8 @@ export const ratingsService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to fetch driver ratings',
+        message:
+          error.response?.data?.message || "Failed to fetch driver ratings",
         error: error.response?.data?.error || error.message,
       };
     }
@@ -96,7 +99,7 @@ export const ratingsService = {
   // Create a new ride rating
   async createRideRating(ratingData) {
     try {
-      const response = await api.post('/ratings', ratingData);
+      const response = await api.post("/ratings", ratingData);
       return {
         success: true,
         data: response.data.data,
@@ -105,14 +108,14 @@ export const ratingsService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to create rating',
+        message: error.response?.data?.message || "Failed to create rating",
         error: error.response?.data?.error || error.message,
       };
     }
   },
 
   // Suspend a user
-  async suspendUser(userId, reason = '') {
+  async suspendUser(userId, reason = "") {
     try {
       const response = await api.put(`/ratings/suspend/${userId}`, { reason });
       return {
@@ -123,9 +126,9 @@ export const ratingsService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || 'Failed to suspend user',
+        message: error.response?.data?.message || "Failed to suspend user",
         error: error.response?.data?.error || error.message,
       };
     }
-  }
+  },
 };

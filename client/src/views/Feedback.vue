@@ -44,12 +44,12 @@ const fetchDriverReports = async () => {
     const response = await ratingsService.getRideRatings({
       page: 1,
       limit: 50,
-      sortBy: 'created_at',
-      order: 'desc'
+      sortBy: "created_at",
+      order: "desc",
     });
 
     if (response.success) {
-      driverReports.value = response.data.ratings.map(rating => ({
+      driverReports.value = response.data.ratings.map((rating) => ({
         id: rating.id,
         type: "DRIVER",
         submittedBy: rating.submittedBy,
@@ -67,7 +67,7 @@ const fetchDriverReports = async () => {
         rideId: rating.rideId,
         pickupLocation: rating.pickupLocation,
         dropoffLocation: rating.dropoffLocation,
-        rideDate: rating.rideDate
+        rideDate: rating.rideDate,
       }));
     } else {
       toast.add({
@@ -78,7 +78,7 @@ const fetchDriverReports = async () => {
       });
     }
   } catch (error) {
-    console.error('Error fetching driver reports:', error);
+    console.error("Error fetching driver reports:", error);
     toast.add({
       severity: "error",
       summary: "Error",
@@ -97,8 +97,8 @@ const fetchSystemFeedback = async () => {
     const response = await feedbackService.getSystemFeedback({
       page: 1,
       limit: 50,
-      sortBy: 'created_at',
-      order: 'desc'
+      sortBy: "created_at",
+      order: "desc",
     });
 
     if (response.success) {
@@ -112,7 +112,7 @@ const fetchSystemFeedback = async () => {
       });
     }
   } catch (error) {
-    console.error('Error fetching system feedback:', error);
+    console.error("Error fetching system feedback:", error);
     toast.add({
       severity: "error",
       summary: "Error",
@@ -126,10 +126,7 @@ const fetchSystemFeedback = async () => {
 
 // Fetch all feedback data
 const fetchFeedback = async () => {
-  await Promise.all([
-    fetchDriverReports(),
-    fetchSystemFeedback()
-  ]);
+  await Promise.all([fetchDriverReports(), fetchSystemFeedback()]);
 };
 
 const showDetails = (feedbackItem) => {
@@ -159,7 +156,7 @@ const handleDriverAction = (report, action) => {
       try {
         loading.value = true;
         const response = await ratingsService.suspendUser(
-          report.driverId, 
+          report.driverId,
           `Driver suspended due to report: ${report.comment}`
         );
 
@@ -177,7 +174,8 @@ const handleDriverAction = (report, action) => {
           toast.add({
             severity: "error",
             summary: "Error",
-            detail: response.message || `Failed to ${action.toLowerCase()} driver`,
+            detail:
+              response.message || `Failed to ${action.toLowerCase()} driver`,
             life: 3000,
           });
         }
@@ -219,7 +217,8 @@ onMounted(() => {
           <div class="px-6 py-4">
             <h1 class="text-2xl font-bold text-[#330b4f] mb-6">
               Feedback and Reports
-            </h1>            <!-- Driver Reports -->
+            </h1>
+            <!-- Driver Reports -->
             <div class="mb-8">
               <h2 class="text-xl font-semibold text-[#330b4f] mb-4">
                 Driver Reports
@@ -267,7 +266,9 @@ onMounted(() => {
                   </Column>
                   <Column field="comment" header="Report" style="width: 30%">
                     <template #body="{ data }">
-                      <div class="truncate max-w-xs">{{ data.comment || 'No comment provided' }}</div>
+                      <div class="truncate max-w-xs">
+                        {{ data.comment || "No comment provided" }}
+                      </div>
                     </template>
                   </Column>
                   <Column
@@ -386,7 +387,8 @@ onMounted(() => {
               </div>
             </div>
           </div>
-        </div>        <!-- Feedback Details Dialog -->
+        </div>
+        <!-- Feedback Details Dialog -->
         <Dialog
           v-model:visible="showFeedbackDetails"
           modal
@@ -431,28 +433,46 @@ onMounted(() => {
                     <strong>Phone:</strong> {{ selectedFeedback.driverPhone }}
                   </div>
                   <div>
-                    <strong>Status:</strong> 
-                    <span :class="{
-                      'px-2 py-1 rounded text-sm ml-2': true,
-                      'bg-red-100 text-red-800': selectedFeedback.driverRole === 'suspended',
-                      'bg-green-100 text-green-800': selectedFeedback.driverRole !== 'suspended'
-                    }">
-                      {{ selectedFeedback.driverRole === 'suspended' ? 'Suspended' : 'Active' }}
+                    <strong>Status:</strong>
+                    <span
+                      :class="{
+                        'px-2 py-1 rounded text-sm ml-2': true,
+                        'bg-red-100 text-red-800':
+                          selectedFeedback.driverRole === 'suspended',
+                        'bg-green-100 text-green-800':
+                          selectedFeedback.driverRole !== 'suspended',
+                      }"
+                    >
+                      {{
+                        selectedFeedback.driverRole === "suspended"
+                          ? "Suspended"
+                          : "Active"
+                      }}
                     </span>
                   </div>
                 </div>
               </div>
-              <div v-if="selectedFeedback.type === 'DRIVER' && (selectedFeedback.pickupLocation || selectedFeedback.dropoffLocation)" class="col-span-2">
+              <div
+                v-if="
+                  selectedFeedback.type === 'DRIVER' &&
+                  (selectedFeedback.pickupLocation ||
+                    selectedFeedback.dropoffLocation)
+                "
+                class="col-span-2"
+              >
                 <label class="text-gray-600">Trip Information</label>
                 <div class="p-3 bg-gray-50 rounded">
                   <div v-if="selectedFeedback.pickupLocation" class="mb-2">
-                    <strong>Pickup:</strong> {{ selectedFeedback.pickupLocation }}
+                    <strong>Pickup:</strong>
+                    {{ selectedFeedback.pickupLocation }}
                   </div>
                   <div v-if="selectedFeedback.dropoffLocation" class="mb-2">
-                    <strong>Dropoff:</strong> {{ selectedFeedback.dropoffLocation }}
+                    <strong>Dropoff:</strong>
+                    {{ selectedFeedback.dropoffLocation }}
                   </div>
                   <div v-if="selectedFeedback.rideDate">
-                    <strong>Ride Date:</strong> {{ formatDate(selectedFeedback.rideDate) }}
+                    <strong>Ride Date:</strong>
+                    {{ formatDate(selectedFeedback.rideDate) }}
                   </div>
                 </div>
               </div>
@@ -474,7 +494,7 @@ onMounted(() => {
                   selectedFeedback.type === "DRIVER" ? "Report" : "Feedback"
                 }}</label>
                 <div class="p-3 bg-gray-50 rounded">
-                  {{ selectedFeedback.comment || 'No comment provided' }}
+                  {{ selectedFeedback.comment || "No comment provided" }}
                 </div>
               </div>
             </div>
