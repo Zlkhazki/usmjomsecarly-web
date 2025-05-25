@@ -95,15 +95,6 @@ onMounted(() => {
     </div>
 
     <div class="flex items-center space-x-4">
-      <div class="hidden md:flex items-center">
-        <div class="relative">
-          <div
-            class="w-2 h-2 bg-green-500 rounded-full absolute right-0 top-0 border border-white"
-          ></div>
-          <Button icon="pi pi-bell" class="p-button-text p-button-rounded" />
-        </div>
-      </div>
-
       <div class="flex items-center cursor-pointer" @click="toggleMenu">
         <div class="flex items-center space-x-2">
           <Avatar
