@@ -13,15 +13,14 @@
           <div class="text-xl font-semibold text-gray-800">
             Driver Applications
           </div>
-
           <div class="flex flex-wrap gap-3">
-            <span class="p-input-icon-left">
-              <i class="pi pi-search" />
+            <IconField>
+              <InputIcon class="pi pi-search" />
               <InputText
                 v-model="filters.global.value"
                 placeholder="Search applications"
               />
-            </span>
+            </IconField>
 
             <Select
               v-model="filters.status.value"
@@ -362,6 +361,8 @@ import Card from "primevue/card";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
+import IconField from "primevue/iconfield";
+import InputIcon from "primevue/inputicon";
 import Select from "primevue/select";
 import Tag from "primevue/tag";
 import Avatar from "primevue/avatar";
