@@ -249,8 +249,7 @@ const suspendUser = async (req, res) => {
     const { data: updatedUser, error } = await supabase
       .from("users")
       .update({
-        role: "suspended",
-        updated_at: new Date().toISOString(),
+        role_status: "suspended",
       })
       .eq("id", userId)
       .select()
