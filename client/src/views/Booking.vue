@@ -154,7 +154,7 @@ const confirmBooking = (booking) => {
 
         // Call the API to update booking status
         const response = await axios.put(
-          `http://localhost:3000/api/bookings/${booking.id}/status`,
+          `${import.meta.env.VITE_API_URL}/bookings/${booking.id}/status`,
           { status: "confirmed" },
           {
             headers: {
@@ -214,7 +214,7 @@ const cancelBooking = (booking) => {
 
         // Call the API to update booking status
         const response = await axios.put(
-          `http://localhost:3000/api/bookings/${booking.id}/status`,
+          `${import.meta.env.VITE_API_URL}/bookings/${booking.id}/status`,
           { status: "cancelled" },
           {
             headers: {
@@ -293,7 +293,7 @@ const contactPassenger = (booking) => {
 
       // Call the API to send email
       const response = await axios.post(
-        `http://localhost:3000/api/bookings/${booking.id}/contact`,
+        `${import.meta.env.VITE_API_URL}/bookings/${booking.id}/contact`,
         {
           subject: emailSubject.value,
           message: emailMessage.value,
@@ -349,7 +349,7 @@ const contactPassenger = (booking) => {
       // Call the API to send email
       axios
         .post(
-          `http://localhost:3000/api/bookings/${booking.id}/contact`,
+          `${import.meta.env.VITE_API_URL}/bookings/${booking.id}/contact`,
           {
             subject,
             message,
@@ -486,7 +486,7 @@ const fetchBookings = async () => {
 
     // Make the API request
     const response = await axios.get(
-      `http://localhost:3000/api/bookings?${queryParams.toString()}`,
+      `${import.meta.env.VITE_API_URL}/bookings?${queryParams.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -496,7 +496,8 @@ const fetchBookings = async () => {
 
     if (response.data.success) {
       // Format the bookings data
-      const bookingsData = response.data.bookings || [];      if (bookingsData.length === 0) {
+      const bookingsData = response.data.bookings || [];
+      if (bookingsData.length === 0) {
         console.log("No bookings data found");
         bookings.value = [];
         treeTableData.value = [];
@@ -519,7 +520,7 @@ const fetchBookings = async () => {
         summary: "Error",
         detail: "Failed to fetch bookings",
         life: 3000,
-      });      // Set empty data when API call fails
+      }); // Set empty data when API call fails
       bookings.value = [];
       treeTableData.value = [];
     }
@@ -530,7 +531,7 @@ const fetchBookings = async () => {
       summary: "Error",
       detail: error.response?.data?.message || "Failed to fetch bookings",
       life: 3000,
-    });    // Set empty data when API call throws an error
+    }); // Set empty data when API call throws an error
     bookings.value = [];
     treeTableData.value = [];
   } finally {
