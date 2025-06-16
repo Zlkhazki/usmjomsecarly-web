@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = "https://jomsecarly-server-production.up.railway.app/api";
+// Base URL for the API - using environment variable
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 // Create axios instance with default config
 const api = axios.create({

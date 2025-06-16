@@ -16,8 +16,7 @@
               <div class="p-4 border-b border-gray-200">
                 <div class="flex justify-between items-center flex-wrap gap-4">
                   <div class="flex items-center gap-4">
-                    <!-- Tab Navigation -->
-                    <div class="flex gap-2">
+                    <!-- Tab Navigation -->                    <div class="flex gap-2">
                       <Button
                         v-for="(tab, index) in tabs"
                         :key="index"
@@ -30,7 +29,7 @@
                           'p-button-outlined text-[#330b4f] hover:bg-[#f5f0fa]':
                             activeTabIndex !== index,
                         }"
-                        @click="activeTabIndex = index"
+                        @click="onTabChange(index)"
                       />
                     </div>
                   </div>
@@ -64,23 +63,39 @@
                     </span>
                   </div>
                 </div>
-              </div>
-
-              <DataTable
+              </div>              <DataTable
                 :value="filteredRides"
                 v-model:filters="dtFilters"
                 filterDisplay="menu"
                 :paginator="true"
-                :rows="10"
-                :rowsPerPageOptions="[10, 20, 50]"
+                :lazy="true"
+                :rows="pageSize"
+                :totalRecords="totalRecords"
+                :rowsPerPageOptions="[25, 50, 100]"
                 paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                 currentPageReportTemplate="Showing {first} to {last} of {totalRecords} rides"
                 responsiveLayout="scroll"
                 dataKey="id"
                 :loading="loading"
+                :loadingIcon="showSkeleton ? '' : 'pi pi-spin pi-spinner'"
                 stripedRows
                 class="p-datatable-lg"
+                @page="onPageChange"
+                scrollable
+                scrollHeight="60vh"
               >
+                <!-- Skeleton Loading Template -->
+                <template #loading v-if="showSkeleton">
+                  <div class="p-4">
+                    <div v-for="i in 5" :key="i" class="flex items-center space-x-4 mb-4">
+                      <div class="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+                      <div class="flex-1 space-y-2">
+                        <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
+                        <div class="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
                 <Column field="id" header="Ride ID" sortable></Column>
                 <Column field="date" header="Date" sortable>
                   <template #body="{ data }">
@@ -351,6 +366,16 @@ const allRides = ref([]);
 const loading = ref(false);
 const selectedRide = ref(null);
 const rideDetailsDialog = ref(false);
+const totalRecords = ref(0);
+const currentPage = ref(1);
+const pageSize = ref(25);
+
+// Skeleton loading states
+const showSkeleton = ref(false);
+const initialLoad = ref(true);
+
+// Debounced search
+let searchTimeout = null;
 
 // Filters
 const filters = reactive({
@@ -358,11 +383,15 @@ const filters = reactive({
   search: "",
 });
 
-// DataTable filters - Updated to match UserPage approach
+// DataTable filters with pagination
 const dtFilters = ref({
   global: { value: null, matchMode: "contains" },
   "driver.name": { value: null, matchMode: "contains" },
 });
+
+// Cache for API responses
+const cache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Tab menu
 const tabs = [
@@ -396,40 +425,84 @@ const getStatusSeverity = (status) => {
   }
 };
 
+// Cache helper functions
+const getCacheKey = (params) => {
+  return JSON.stringify(params);
+};
+
+const getCachedData = (key) => {
+  const cached = cache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  cache.delete(key);
+  return null;
+};
+
+const setCachedData = (key, data) => {
+  cache.set(key, {
+    data,
+    timestamp: Date.now(),
+  });
+};
+
+// Debounced search function
+const debouncedSearch = (callback, delay = 500) => {
+  if (searchTimeout) clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(callback, delay);
+};
+
 // Methods
 const searchRides = async () => {
-  loading.value = true;
-
-  // Update dtFilters based on the filters object
-  if (filters.search) {
-    dtFilters.value.global.value = filters.search;
-  } else {
-    dtFilters.value.global.value = null;
-  }
-
-  // Fetch rides with current filters
-  await fetchRides();
+  debouncedSearch(async () => {
+    await fetchRides();
+  });
 };
 
 const resetFilters = async () => {
   filters.dateRange = null;
   filters.search = "";
-
-  // Reset dtFilters as well
   dtFilters.value.global.value = null;
   dtFilters.value["driver.name"].value = null;
+  currentPage.value = 1;
+  
+  // Clear cache for fresh data
+  cache.clear();
+  await fetchRides();
+};
 
-  await searchRides();
+const onPageChange = async (event) => {
+  currentPage.value = event.page + 1;
+  pageSize.value = event.rows;
+  await fetchRides();
+};
+
+const onTabChange = async (index) => {
+  activeTabIndex.value = index;
+  currentPage.value = 1;
+  await fetchRides();
 };
 
 const viewRideDetails = async (ride) => {
   try {
+    // Check cache first
+    const cacheKey = `ride-${ride.id}`;
+    const cachedRide = getCachedData(cacheKey);
+    
+    if (cachedRide) {
+      selectedRide.value = cachedRide;
+      rideDetailsDialog.value = true;
+      return;
+    }
+
     loading.value = true;
-    // Fetch detailed ride information
+    showSkeleton.value = true;
+    
     const response = await rideService.getRideById(ride.id);
 
     if (response.success) {
       selectedRide.value = response.data;
+      setCachedData(cacheKey, response.data);
       rideDetailsDialog.value = true;
     } else {
       toast.add({
@@ -449,11 +522,17 @@ const viewRideDetails = async (ride) => {
     });
   } finally {
     loading.value = false;
+    showSkeleton.value = false;
   }
 };
 
 const cancelRide = async (ride) => {
   try {
+    // Show confirmation before cancelling
+    if (!confirm(`Are you sure you want to cancel ride #${ride.id}?`)) {
+      return;
+    }
+    
     loading.value = true;
     const response = await rideService.cancelRide(ride.id);
 
@@ -465,6 +544,9 @@ const cancelRide = async (ride) => {
         life: 3000,
       });
 
+      // Clear cache to force refresh
+      cache.clear();
+      
       // Refresh rides data
       await fetchRides();
     } else {
@@ -480,7 +562,7 @@ const cancelRide = async (ride) => {
     toast.add({
       severity: "error",
       summary: "Error",
-      detail: "Failed to cancel ride",
+      detail: "Failed to cancel ride. Please try again.",
       life: 3000,
     });
   } finally {
@@ -489,26 +571,45 @@ const cancelRide = async (ride) => {
 };
 
 const onDateSelect = async () => {
-  // Filter by date range
-  await fetchRides();
+  debouncedSearch(async () => {
+    currentPage.value = 1;
+    await fetchRides();
+  });
 };
 
 const onSearch = () => {
-  dtFilters.value.global.value = filters.search;
+  debouncedSearch(async () => {
+    currentPage.value = 1;
+    await fetchRides();
+  });
 };
 
-// API data fetching
+// Optimized API data fetching with server-side pagination
 const fetchRides = async () => {
   try {
-    loading.value = true;
+    // Show skeleton for initial load, loading spinner for subsequent loads
+    if (initialLoad.value) {
+      showSkeleton.value = true;
+    } else {
+      loading.value = true;
+    }
 
-    // Prepare filter parameters
+    // Prepare filter parameters with pagination
     const filterParams = {
-      page: 1,
-      limit: 100, // Get more rides for client-side filtering
-      sortBy: "date",
+      page: currentPage.value,
+      limit: pageSize.value,
+      sortBy: "created_at",
       order: "desc",
     };
+
+    // Add status filter based on active tab
+    if (activeTabIndex.value === 1) {
+      filterParams.status = "completed";
+    } else if (activeTabIndex.value === 2) {
+      filterParams.status = "active";
+    } else if (activeTabIndex.value === 3) {
+      filterParams.status = "cancelled";
+    }
 
     // Add date range filter if selected
     if (filters.dateRange && filters.dateRange.length === 2) {
@@ -517,15 +618,44 @@ const fetchRides = async () => {
     }
 
     // Add search filter if provided
-    if (filters.search) {
-      filterParams.pickup = filters.search;
+    if (filters.search?.trim()) {
+      filterParams.search = filters.search.trim();
     }
 
+    // Check cache first
+    const cacheKey = getCacheKey(filterParams);
+    const cachedData = getCachedData(cacheKey);
+    
+    if (cachedData && !initialLoad.value) {
+      rides.value = cachedData.rides;
+      totalRecords.value = cachedData.total;
+      return;
+    }
+
+    // Performance timing
+    const startTime = performance.now();
+    
     const response = await rideService.getFilteredRides(filterParams);
 
+    const endTime = performance.now();
+    console.log(`API call took ${endTime - startTime} milliseconds`);
+
     if (response.success) {
-      allRides.value = response.data.rides || [];
-      rides.value = allRides.value;
+      const data = {
+        rides: response.data.rides || [],
+        total: response.data.total || 0,
+      };
+      
+      rides.value = data.rides;
+      totalRecords.value = data.total;
+      
+      // Cache the response
+      setCachedData(cacheKey, data);
+      
+      // Prefetch next page data in background
+      if (currentPage.value * pageSize.value < totalRecords.value) {
+        prefetchNextPage(filterParams);
+      }
     } else {
       console.error("Failed to fetch rides:", response.message);
       toast.add({
@@ -534,8 +664,8 @@ const fetchRides = async () => {
         detail: response.message || "Failed to fetch rides",
         life: 3000,
       });
-      allRides.value = [];
       rides.value = [];
+      totalRecords.value = 0;
     }
   } catch (error) {
     console.error("Error fetching rides:", error);
@@ -545,31 +675,87 @@ const fetchRides = async () => {
       detail: "Failed to fetch rides. Please try again.",
       life: 3000,
     });
-    allRides.value = [];
     rides.value = [];
+    totalRecords.value = 0;
   } finally {
     loading.value = false;
+    showSkeleton.value = false;
+    initialLoad.value = false;
   }
 };
 
-// Computed property for filtered rides based on active tab
-const filteredRides = computed(() => {
-  if (activeTabIndex.value === 0) {
-    return allRides.value; // All rides
-  } else if (activeTabIndex.value === 1) {
-    return allRides.value.filter((ride) => ride.status === "Completed");
-  } else if (activeTabIndex.value === 2) {
-    return allRides.value.filter((ride) => ride.status === "Active");
-  } else if (activeTabIndex.value === 3) {
-    return allRides.value.filter((ride) => ride.status === "Cancelled");
+// Prefetch next page data
+const prefetchNextPage = async (currentParams) => {
+  try {
+    const nextPageParams = {
+      ...currentParams,
+      page: currentParams.page + 1,
+    };
+    
+    const cacheKey = getCacheKey(nextPageParams);
+    
+    // Only prefetch if not already cached
+    if (!getCachedData(cacheKey)) {
+      const response = await rideService.getFilteredRides(nextPageParams);
+      if (response.success) {
+        const data = {
+          rides: response.data.rides || [],
+          total: response.data.total || 0,
+        };
+        setCachedData(cacheKey, data);
+      }
+    }
+  } catch (error) {
+    // Silently fail prefetch to not interrupt user experience
+    console.warn("Prefetch failed:", error);
   }
-  return allRides.value;
+};
+
+// Computed property for filtered rides based on active tab - now handled server-side
+const filteredRides = computed(() => {
+  return rides.value; // Data is already filtered server-side
 });
 
-// Lifecycle hooks
+// Lifecycle hooks with performance optimization
 onMounted(async () => {
+  console.log('🚀 RideManagement component mounted');
+  console.log('📊 Available rideService methods:', Object.keys(rideService));
+  
+  // Start loading immediately
   await fetchRides();
+  
+  // Preload common data in background
+  setTimeout(() => {
+    preloadCommonData();
+  }, 1000);
 });
+
+// Preload commonly accessed data
+const preloadCommonData = async () => {
+  try {
+    // Preload completed rides (most commonly viewed)
+    const completedParams = {
+      page: 1,
+      limit: pageSize.value,
+      status: "completed",
+      sortBy: "created_at",
+      order: "desc",
+    };
+    
+    const cacheKey = getCacheKey(completedParams);
+    if (!getCachedData(cacheKey)) {
+      const response = await rideService.getFilteredRides(completedParams);
+      if (response.success) {
+        setCachedData(cacheKey, {
+          rides: response.data.rides || [],
+          total: response.data.total || 0,
+        });
+      }
+    }
+  } catch (error) {
+    console.warn("Preload failed:", error);
+  }
+};
 
 const toggleSidebar = () => {
   if (sidebar.value) {

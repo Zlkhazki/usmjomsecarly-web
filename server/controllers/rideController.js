@@ -7,9 +7,9 @@ const formatRideForFrontend = (ride) => {
   // Map database status to frontend status
   const statusMap = {
     open: "Scheduled",
-    in_progress: "Active",
+    started: "Active",
     ended: "Completed",
-    cancelled: "Cancelled",
+    closed: "Cancelled",
   };
 
   const frontendStatus = statusMap[ride.status] || ride.status;
@@ -36,18 +36,16 @@ const formatRideForFrontend = (ride) => {
         },
       }
     : null;
-
   // Format passengers from bookings
   const passengers = ride.bookings
     ? ride.bookings
-        .filter((booking) => booking.status !== "cancelled")
+        .filter((booking) => booking.status !== "closed")
         .map((booking) => ({
           id: booking.user_id,
           name: booking.users?.name || "Unknown Passenger",
           phone: booking.users?.phone_number || "",
           email: booking.users?.email || "",
           avatar: booking.users?.profile_picture || null,
-          fare: booking.fare || 0,
           paymentStatus: booking.status === "confirmed" ? "Paid" : "Pending",
           paymentMethod: "DuitNow", // Default since not in schema
           seatNumber: booking.seat_number,
@@ -102,7 +100,7 @@ export const getRides = async (req, res) => {
   try {
     const {
       page = 1,
-      limit = 10,
+      limit = 25, // Increased default for better performance
       status,
       driverId,
       date,
@@ -110,17 +108,21 @@ export const getRides = async (req, res) => {
       endDate,
       pickup,
       destination,
+      search, // Add general search parameter
       minSeats,
-      sortBy = "date",
-      order = "asc",
+      sortBy = "created_at", // Changed to created_at for better indexing
+      order = "desc", // Default to newest first
     } = req.query;
 
-    // Calculate pagination values
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    // Performance timing
+    const startTime = performance.now();
+
+    // Validate and sanitize inputs
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit))); // Cap at 100 for performance
     const startIndex = (pageNum - 1) * limitNum;
 
-    // Start building the query
+    // Start building the optimized query with selective fields for better performance
     let query = supabase.from("rides").select(
       `
         id,
@@ -128,64 +130,47 @@ export const getRides = async (req, res) => {
         date,
         time,
         pickup_address,
-        pickup_latitude,
-        pickup_longitude,
         drop_address,
-        drop_latitude,
-        drop_longitude,
         base_fare,
         distance,
         duration,
-        is_surge,
-        distance_fare,
-        duration_fare,
-        surge_multiplier,
         total_fare,
         price,
         seats,
         created_at,
-        updated_at,
-        preferences,
         status,
         users!rides_driver_id_fkey (
           id,
           name,
-          email,
           phone_number,
-          profile_picture,
           car_model,
           plate_number,
           rating,
           total_rides
-        ),
-        bookings (
+        ),        bookings (
           id,
           user_id,
-          seat_number,
           status,
+          seat_number,
           booking_time,
           users!bookings_user_id_fkey1 (
             id,
             name,
-            email,
-            phone_number,
-            profile_picture
+            phone_number
           )
         )
         `,
       { count: "exact" }
-    );
-
-    // Apply filters if provided
+    ); // Apply filters with optimized queries
     if (status) {
       // Map frontend status to database status
       const statusMap = {
-        Active: "in_progress",
-        Completed: "ended",
-        Scheduled: "open",
-        Cancelled: "cancelled",
+        active: "started",
+        completed: "ended",
+        scheduled: "open",
+        cancelled: "closed",
       };
-      const dbStatus = statusMap[status] || status.toLowerCase();
+      const dbStatus = statusMap[status.toLowerCase()] || status.toLowerCase();
       query = query.eq("status", dbStatus);
     }
 
@@ -201,11 +186,20 @@ export const getRides = async (req, res) => {
       query = query.gte("date", startDate).lte("date", endDate);
     }
 
-    if (pickup) {
+    // General search across pickup and destination
+    if (search?.trim()) {
+      const searchTerm = search.trim();
+      query = query.or(
+        `pickup_address.ilike.%${searchTerm}%,drop_address.ilike.%${searchTerm}%`
+      );
+    }
+
+    // Individual location filters (for backward compatibility)
+    if (pickup && !search) {
       query = query.ilike("pickup_address", `%${pickup}%`);
     }
 
-    if (destination) {
+    if (destination && !search) {
       query = query.ilike("drop_address", `%${destination}%`);
     }
 
@@ -213,8 +207,18 @@ export const getRides = async (req, res) => {
       query = query.gte("seats", minSeats);
     }
 
-    // Apply sorting
-    query = query.order(sortBy, { ascending: order === "asc" });
+    // Apply sorting with database-optimized field names
+    const validSortFields = {
+      created_at: "created_at",
+      date: "date",
+      status: "status",
+      total_fare: "total_fare",
+      pickup_address: "pickup_address",
+      drop_address: "drop_address",
+    };
+
+    const dbSortField = validSortFields[sortBy] || "created_at";
+    query = query.order(dbSortField, { ascending: order === "asc" });
 
     // Apply pagination
     query = query.range(startIndex, startIndex + limitNum - 1);
@@ -231,18 +235,30 @@ export const getRides = async (req, res) => {
       });
     }
 
-    // Format the response
+    // Performance logging
+    const endTime = performance.now();
+    console.log(`Database query took ${(endTime - startTime).toFixed(2)}ms`);
+
+    // Set cache headers for GET requests
+    res.set({
+      "Cache-Control": "public, max-age=60", // Cache for 1 minute
+      ETag: `"rides-${pageNum}-${limitNum}-${JSON.stringify(req.query)}"`,
+    });
+
+    // Format the response with optimized data structure
+    const formattedRides = rides.map(formatRideForFrontend);
+
     return res.status(200).json({
       success: true,
       message: "Rides fetched successfully",
       data: {
-        rides: rides.map(formatRideForFrontend),
-        pagination: {
-          total: count,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(count / limitNum),
-        },
+        rides: formattedRides,
+        total: count,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(count / limitNum),
+        hasNextPage: pageNum * limitNum < count,
+        hasPrevPage: pageNum > 1,
       },
     });
   } catch (error) {
@@ -423,7 +439,7 @@ export const createRide = async (req, res) => {
         price,
         seats,
         preferences: preferences || [],
-        status: "open",
+        status: "open", // Use correct enum value
       })
       .select()
       .single();
@@ -616,15 +632,13 @@ export const getRidesByDriver = async (req, res) => {
         `,
         { count: "exact" }
       )
-      .eq("driver_id", driverId);
-
-    // Apply additional filters
+      .eq("driver_id", driverId); // Apply additional filters
     if (status) {
       const statusMap = {
         Active: "started",
         Completed: "ended",
         Scheduled: "open",
-        Cancelled: "cancelled",
+        Cancelled: "closed",
       };
       const dbStatus = statusMap[status] || status.toLowerCase();
       query = query.eq("status", dbStatus);
@@ -729,7 +743,7 @@ export const getRideBookings = async (req, res) => {
     // Format bookings with individual fare calculation
     const totalFare = ride?.total_fare || ride?.price || 0;
     const activeBookings = bookings.filter(
-      (booking) => booking.status !== "cancelled"
+      (booking) => booking.status !== "closed"
     );
     const farePerPassenger =
       activeBookings.length > 0
@@ -750,7 +764,7 @@ export const getRideBookings = async (req, res) => {
         phone: booking.users?.phone_number || "",
         avatar: booking.users?.profile_picture || null,
       },
-      fare: booking.status !== "cancelled" ? farePerPassenger : 0,
+      fare: booking.status !== "closed" ? farePerPassenger : 0,
       paymentMethod: "DuitNow", // Default since not in schema
     }));
 
