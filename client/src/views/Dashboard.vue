@@ -32,83 +32,13 @@ const statusOptions = ref([
   { label: "Pending", value: "PENDING" },
 ]);
 
-// Mock data for dashboard
+// Dashboard stats - will be fetched from API
 const stats = ref({
-  totalUsers: 256,
-  activeDrivers: 42,
-  completedRides: 189,
-  pendingApprovals: 15,
+  totalUsers: 0,
+  activeDrivers: 0,
+  completedRides: 0,
+  pendingApprovals: 0,
 });
-
-// Mock user data
-const mockUsers = [
-  {
-    id: 1,
-    name: "Ahmad Bin Abdullah",
-    email: "ahmad@usm.my",
-    phone: "012-3456789",
-    role: "STUDENT",
-    status: "ACTIVE",
-    createdAt: "2023-09-15T08:30:00",
-    studentId: "USM12345",
-    faculty: "School of Computer Sciences",
-  },
-  {
-    id: 2,
-    name: "Siti Binti Mahmood",
-    email: "siti@usm.my",
-    phone: "019-8765432",
-    role: "DRIVER",
-    status: "ACTIVE",
-    createdAt: "2023-08-27T09:45:00",
-    studentId: "USM54321",
-    faculty: "School of Management",
-    vehicleModel: "Perodua Myvi",
-    vehicleColor: "Silver",
-    vehiclePlate: "PKR 1234",
-    totalRides: 45,
-    avgRating: 4.8,
-    completionRate: 98,
-  },
-  {
-    id: 3,
-    name: "Raj Kumar",
-    email: "raj@usm.my",
-    phone: "017-1122334",
-    role: "STUDENT",
-    status: "PENDING",
-    createdAt: "2023-10-05T14:20:00",
-    studentId: "USM67890",
-    faculty: "School of Engineering",
-  },
-  {
-    id: 4,
-    name: "Lily Tan",
-    email: "lily@student.usm.my",
-    phone: "013-9988776",
-    role: "DRIVER",
-    status: "SUSPENDED",
-    createdAt: "2023-07-10T11:05:00",
-    studentId: "USM24680",
-    faculty: "School of Social Sciences",
-    vehicleModel: "Honda City",
-    vehicleColor: "Black",
-    vehiclePlate: "PLS 5678",
-    totalRides: 28,
-    avgRating: 3.2,
-    completionRate: 75,
-  },
-  {
-    id: 5,
-    name: "Dr. Wong Mei Ling",
-    email: "drwong@usm.my",
-    phone: "014-5566778",
-    role: "STAFF",
-    status: "ACTIVE",
-    createdAt: "2023-06-18T10:15:00",
-    faculty: "School of Medical Sciences",
-  },
-];
 
 const toggleSidebar = () => {
   if (sidebar.value) {
@@ -450,16 +380,6 @@ onMounted(() => {
               <div class="border-b pb-2">
                 <p class="text-sm text-gray-500">Phone</p>
                 <p>{{ selectedUser.phone_number || "Not provided" }}</p>
-              </div>
-
-              <div class="border-b pb-2">
-                <p class="text-sm text-gray-500">Student/Staff ID</p>
-                <p>{{ selectedUser.studentId || "Not provided" }}</p>
-              </div>
-
-              <div class="border-b pb-2">
-                <p class="text-sm text-gray-500">Faculty/Department</p>
-                <p>{{ selectedUser.faculty || "Not provided" }}</p>
               </div>
 
               <div class="border-b pb-2">
