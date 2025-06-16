@@ -434,14 +434,6 @@ onMounted(() => {
           </div>
         </div>
       </div>
-      <template #footer>
-        <Button
-          icon="pi pi-times"
-          label="Close"
-          class="p-button-text"
-          @click="showUserDetails = false"
-        />
-      </template>
     </Dialog>
   </div>
 </template>

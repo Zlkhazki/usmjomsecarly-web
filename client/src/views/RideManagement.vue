@@ -16,7 +16,8 @@
               <div class="p-4 border-b border-gray-200">
                 <div class="flex justify-between items-center flex-wrap gap-4">
                   <div class="flex items-center gap-4">
-                    <!-- Tab Navigation -->                    <div class="flex gap-2">
+                    <!-- Tab Navigation -->
+                    <div class="flex gap-2">
                       <Button
                         v-for="(tab, index) in tabs"
                         :key="index"
@@ -63,7 +64,8 @@
                     </span>
                   </div>
                 </div>
-              </div>              <DataTable
+              </div>
+              <DataTable
                 :value="filteredRides"
                 v-model:filters="dtFilters"
                 filterDisplay="menu"
@@ -87,22 +89,32 @@
                 <!-- Skeleton Loading Template -->
                 <template #loading v-if="showSkeleton">
                   <div class="p-4">
-                    <div v-for="i in 5" :key="i" class="flex items-center space-x-4 mb-4">
-                      <div class="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+                    <div
+                      v-for="i in 5"
+                      :key="i"
+                      class="flex items-center space-x-4 mb-4"
+                    >
+                      <div
+                        class="w-8 h-8 bg-gray-200 rounded-full animate-pulse"
+                      ></div>
                       <div class="flex-1 space-y-2">
-                        <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
-                        <div class="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                        <div
+                          class="h-4 bg-gray-200 rounded animate-pulse"
+                        ></div>
+                        <div
+                          class="h-3 bg-gray-200 rounded w-3/4 animate-pulse"
+                        ></div>
                       </div>
                     </div>
                   </div>
                 </template>
-                <Column field="id" header="Ride ID" sortable></Column>
-                <Column field="date" header="Date" sortable>
+                <Column field="id" header="Ride ID"></Column>
+                <Column field="date" header="Date">
                   <template #body="{ data }">
                     {{ new Date(data.date).toLocaleDateString() }}
                   </template>
                 </Column>
-                <Column field="driver.name" header="Driver" sortable>
+                <Column field="driver.name" header="Driver">
                   <template #body="{ data }">
                     <div class="flex items-center">
                       <div
@@ -114,13 +126,9 @@
                     </div>
                   </template>
                 </Column>
-                <Column field="pickup" header="Pickup" sortable></Column>
-                <Column
-                  field="destination"
-                  header="Destination"
-                  sortable
-                ></Column>
-                <Column field="status" header="Status" sortable>
+                <Column field="pickup" header="Pickup"></Column>
+                <Column field="destination" header="Destination"></Column>
+                <Column field="status" header="Status">
                   <template #body="{ data }">
                     <span
                       :class="{
@@ -137,7 +145,7 @@
                     </span>
                   </template>
                 </Column>
-                <Column field="totalFare" header="Total Fare" sortable>
+                <Column field="totalFare" header="Total Fare">
                   <template #body="{ data }">
                     RM {{ data.totalFare.toFixed(2) }}
                   </template>
@@ -465,7 +473,7 @@ const resetFilters = async () => {
   dtFilters.value.global.value = null;
   dtFilters.value["driver.name"].value = null;
   currentPage.value = 1;
-  
+
   // Clear cache for fresh data
   cache.clear();
   await fetchRides();
@@ -488,7 +496,7 @@ const viewRideDetails = async (ride) => {
     // Check cache first
     const cacheKey = `ride-${ride.id}`;
     const cachedRide = getCachedData(cacheKey);
-    
+
     if (cachedRide) {
       selectedRide.value = cachedRide;
       rideDetailsDialog.value = true;
@@ -497,7 +505,7 @@ const viewRideDetails = async (ride) => {
 
     loading.value = true;
     showSkeleton.value = true;
-    
+
     const response = await rideService.getRideById(ride.id);
 
     if (response.success) {
@@ -532,7 +540,7 @@ const cancelRide = async (ride) => {
     if (!confirm(`Are you sure you want to cancel ride #${ride.id}?`)) {
       return;
     }
-    
+
     loading.value = true;
     const response = await rideService.cancelRide(ride.id);
 
@@ -546,7 +554,7 @@ const cancelRide = async (ride) => {
 
       // Clear cache to force refresh
       cache.clear();
-      
+
       // Refresh rides data
       await fetchRides();
     } else {
@@ -625,7 +633,7 @@ const fetchRides = async () => {
     // Check cache first
     const cacheKey = getCacheKey(filterParams);
     const cachedData = getCachedData(cacheKey);
-    
+
     if (cachedData && !initialLoad.value) {
       rides.value = cachedData.rides;
       totalRecords.value = cachedData.total;
@@ -634,7 +642,7 @@ const fetchRides = async () => {
 
     // Performance timing
     const startTime = performance.now();
-    
+
     const response = await rideService.getFilteredRides(filterParams);
 
     const endTime = performance.now();
@@ -645,13 +653,13 @@ const fetchRides = async () => {
         rides: response.data.rides || [],
         total: response.data.total || 0,
       };
-      
+
       rides.value = data.rides;
       totalRecords.value = data.total;
-      
+
       // Cache the response
       setCachedData(cacheKey, data);
-      
+
       // Prefetch next page data in background
       if (currentPage.value * pageSize.value < totalRecords.value) {
         prefetchNextPage(filterParams);
@@ -691,9 +699,9 @@ const prefetchNextPage = async (currentParams) => {
       ...currentParams,
       page: currentParams.page + 1,
     };
-    
+
     const cacheKey = getCacheKey(nextPageParams);
-    
+
     // Only prefetch if not already cached
     if (!getCachedData(cacheKey)) {
       const response = await rideService.getFilteredRides(nextPageParams);
@@ -718,12 +726,12 @@ const filteredRides = computed(() => {
 
 // Lifecycle hooks with performance optimization
 onMounted(async () => {
-  console.log('🚀 RideManagement component mounted');
-  console.log('📊 Available rideService methods:', Object.keys(rideService));
-  
+  console.log("🚀 RideManagement component mounted");
+  console.log("📊 Available rideService methods:", Object.keys(rideService));
+
   // Start loading immediately
   await fetchRides();
-  
+
   // Preload common data in background
   setTimeout(() => {
     preloadCommonData();
@@ -741,7 +749,7 @@ const preloadCommonData = async () => {
       sortBy: "created_at",
       order: "desc",
     };
-    
+
     const cacheKey = getCacheKey(completedParams);
     if (!getCachedData(cacheKey)) {
       const response = await rideService.getFilteredRides(completedParams);

@@ -550,22 +550,6 @@ onMounted(() => {
               </div>
 
               <div class="border-b pb-2">
-                <p class="text-sm text-gray-500">Student/Staff ID</p>
-                <p>
-                  {{
-                    selectedUser.matric_id ||
-                    selectedUser.staff_id ||
-                    "Not provided"
-                  }}
-                </p>
-              </div>
-
-              <div class="border-b pb-2">
-                <p class="text-sm text-gray-500">Faculty/Department</p>
-                <p>{{ selectedUser.faculty || "Not provided" }}</p>
-              </div>
-
-              <div class="border-b pb-2">
                 <p class="text-sm text-gray-500">Joined</p>
                 <p>
                   {{
@@ -579,13 +563,11 @@ onMounted(() => {
               <div v-if="selectedUser.role === 'driver'" class="border-b pb-2">
                 <p class="text-sm text-gray-500">Vehicle Details</p>
                 <p>
-                  {{ selectedUser.vehicle_model || "Not provided" }} ({{
-                    selectedUser.vehicle_color || "N/A"
-                  }})
+                  {{ selectedUser.car_model || "Not provided" }}
                 </p>
                 <p>
                   Plate:
-                  {{ selectedUser.vehicle_plate_number || "Not provided" }}
+                  {{ selectedUser.plate_number || "Not provided" }}
                 </p>
               </div>
             </div>
@@ -596,29 +578,19 @@ onMounted(() => {
           <h4 class="text-lg font-medium text-[#330b4f] mb-2">
             Driver Statistics
           </h4>
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-2 gap-4">
             <div class="bg-[#f5f0fa] p-3 rounded-lg">
-              <p class="text-sm text-gray-500">Total Rides</p>
+              <p class="text-sm text-gray-500">Total Completed Rides</p>
               <p class="text-xl font-semibold text-[#330b4f]">
                 {{ selectedUser.total_rides || 0 }}
               </p>
             </div>
             <div class="bg-[#f5f0fa] p-3 rounded-lg">
-              <p class="text-sm text-gray-500">Average Rating</p>
+              <p class="text-sm text-gray-500">Rating</p>
               <p class="text-xl font-semibold text-[#330b4f]">
                 {{
-                  selectedUser.average_rating
-                    ? parseFloat(selectedUser.average_rating).toFixed(1)
-                    : "N/A"
-                }}
-              </p>
-            </div>
-            <div class="bg-[#f5f0fa] p-3 rounded-lg">
-              <p class="text-sm text-gray-500">Completion Rate</p>
-              <p class="text-xl font-semibold text-[#330b4f]">
-                {{
-                  selectedUser.completion_rate
-                    ? selectedUser.completion_rate + "%"
+                  selectedUser.rating
+                    ? parseFloat(selectedUser.rating).toFixed(1)
                     : "N/A"
                 }}
               </p>
@@ -640,13 +612,13 @@ onMounted(() => {
               class="p-button-danger p-button-outlined mr-2"
               @click="updateUserStatus(selectedUser, 'suspended')"
             />
-            <Button
+            <!-- <Button
               v-if="selectedUser && selectedUser.role_status !== 'approved'"
               icon="pi pi-check"
               label="Approve User"
               class="p-button-success p-button-outlined"
               @click="updateUserStatus(selectedUser, 'approved')"
-            />
+            /> -->
           </div>
           <Button
             icon="pi pi-times"

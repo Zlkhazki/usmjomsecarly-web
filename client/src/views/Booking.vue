@@ -575,7 +575,7 @@ const formatBookingFromApi = (apiBooking) => {
       name: driver.name || "Unknown Driver",
       phone: driver.phone_number || "N/A",
       email: driver.email || "N/A",
-      rating: driver.rating || 4.5,
+      rating: driver.rating || 0,
       totalRides: driver.total_rides || 0,
       vehicle: {
         make: driver.car_model
