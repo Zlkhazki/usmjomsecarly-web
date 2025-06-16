@@ -112,7 +112,7 @@ const fetchUsers = async () => {
     const response = await axios.get(
       `${
         import.meta.env.VITE_API_URL
-      }/admin/users?limit=5&sortBy=created_at&order=desc`,
+      }/admin/users?sortBy=created_at&order=desc`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
