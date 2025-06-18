@@ -4,6 +4,7 @@ import {
   getRideRatingsByDriver,
   createRideRating,
   suspendUser,
+  unsuspendUser,
 } from "../controllers/ratingsController.js";
 
 // Middleware (you may need to adjust these based on your auth setup)
@@ -24,5 +25,8 @@ router.post("/", authenticateToken, createRideRating);
 
 // PUT /api/ratings/suspend/:userId - Suspend a user (admin only)
 router.put("/suspend/:userId", authenticateToken, suspendUser);
+
+// PUT /api/ratings/unsuspend/:userId - Unsuspend a user (admin only)
+router.put("/unsuspend/:userId", authenticateToken, unsuspendUser);
 
 export default router;

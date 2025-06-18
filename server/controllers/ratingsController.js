@@ -31,20 +31,21 @@ const getRideRatings = async (req, res) => {
           name,
           email,
           phone_number
-        ),
-        target_user:target_user_id (
+        ),        target_user:target_user_id (
           id,
           name,
           email,
           phone_number,
-          role
-        ),
-        booking:booking_id (
+          role,
+          role_status
+        ),        booking:booking_id (
           id
         ),
         ride:ride_id (
           id,
-          date
+          date,
+          pickup_address,
+          drop_address
         )
       `,
         { count: "exact" }
@@ -77,8 +78,9 @@ const getRideRatings = async (req, res) => {
       driverPhone: rating.target_user?.phone_number,
       driverId: rating.target_user?.id,
       driverRole: rating.target_user?.role,
-      pickupLocation: rating.booking?.pickup_address,
-      dropoffLocation: rating.booking?.drop_address,
+      driverRoleStatus: rating.target_user?.role_status,
+      pickupLocation: rating.ride?.pickup_address,
+      dropoffLocation: rating.ride?.drop_address,
       rideDate: rating.ride?.date,
     }));
 
@@ -290,9 +292,68 @@ const suspendUser = async (req, res) => {
   }
 };
 
+// Unsuspend a user (set role_status to approved)
+const unsuspendUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // Update user role_status to approved
+    const { data: updatedUser, error } = await supabase
+      .from("users")
+      .update({
+        role_status: "approved",
+      })
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to unsuspend user",
+        error: error.message,
+      });
+    }
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Optionally log the unsuspension action
+    console.log(
+      `User ${userId} unsuspended. Reason: ${reason || "No reason provided"}`
+    );
+
+    res.json({
+      success: true,
+      data: updatedUser,
+      message: "User unsuspended successfully",
+    });
+  } catch (error) {
+    console.error("Error in unsuspendUser:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export {
   getRideRatings,
   getRideRatingsByDriver,
   createRideRating,
   suspendUser,
+  unsuspendUser,
 };

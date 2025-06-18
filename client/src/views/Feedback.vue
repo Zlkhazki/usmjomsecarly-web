@@ -47,7 +47,6 @@ const fetchDriverReports = async () => {
       sortBy: "created_at",
       order: "desc",
     });
-
     if (response.success) {
       driverReports.value = response.data.ratings.map((rating) => ({
         id: rating.id,
@@ -60,6 +59,7 @@ const fetchDriverReports = async () => {
         driverEmail: rating.driverEmail,
         driverPhone: rating.driverPhone,
         driverRole: rating.driverRole,
+        driverRoleStatus: rating.driverRoleStatus,
         rating: rating.rating,
         comment: rating.comment,
         createdAt: rating.createdAt,
@@ -155,10 +155,19 @@ const handleDriverAction = (report, action) => {
     accept: async () => {
       try {
         loading.value = true;
-        const response = await ratingsService.suspendUser(
-          report.driverId,
-          `Driver suspended due to report: ${report.comment}`
-        );
+        let response;
+        
+        if (action.toLowerCase() === 'suspend') {
+          response = await ratingsService.suspendUser(
+            report.driverId,
+            `Driver suspended due to report: ${report.comment}`
+          );
+        } else if (action.toLowerCase() === 'unsuspend') {
+          response = await ratingsService.unsuspendUser(
+            report.driverId,
+            `Driver unsuspended by admin`
+          );
+        }
 
         if (response.success) {
           toast.add({
@@ -168,7 +177,8 @@ const handleDriverAction = (report, action) => {
             life: 3000,
           });
 
-          // Refresh the data
+          // Close the dialog and refresh the data
+          showFeedbackDetails.value = false;
           await fetchDriverReports();
         } else {
           toast.add({
@@ -292,21 +302,6 @@ onMounted(() => {
                           @click="showDetails(data)"
                           v-tooltip.top="'View Details'"
                         />
-                        <Button
-                          v-if="data.driverRole !== 'suspended'"
-                          icon="pi pi-ban"
-                          rounded
-                          text
-                          severity="danger"
-                          @click="handleDriverAction(data, 'Suspend')"
-                          v-tooltip.top="'Suspend Driver'"
-                        />
-                        <span
-                          v-else
-                          class="px-2 py-1 rounded text-xs bg-red-100 text-red-800"
-                        >
-                          Suspended
-                        </span>
                       </div>
                     </template>
                   </Column>
@@ -433,19 +428,22 @@ onMounted(() => {
                     <strong>Phone:</strong> {{ selectedFeedback.driverPhone }}
                   </div>
                   <div>
-                    <strong>Status:</strong>
-                    <span
+                    <strong>Status:</strong>                    <span
                       :class="{
                         'px-2 py-1 rounded text-sm ml-2': true,
                         'bg-red-100 text-red-800':
-                          selectedFeedback.driverRole === 'suspended',
+                          selectedFeedback.driverRoleStatus === 'suspended',
                         'bg-green-100 text-green-800':
-                          selectedFeedback.driverRole !== 'suspended',
+                          selectedFeedback.driverRoleStatus === 'approved' ||
+                          !selectedFeedback.driverRoleStatus ||
+                          selectedFeedback.driverRoleStatus !== 'suspended',
                       }"
                     >
                       {{
-                        selectedFeedback.driverRole === "suspended"
+                        selectedFeedback.driverRoleStatus === "suspended"
                           ? "Suspended"
+                          : selectedFeedback.driverRoleStatus === "approved"
+                          ? "Active (Approved)"
                           : "Active"
                       }}
                     </span>
@@ -499,19 +497,40 @@ onMounted(() => {
               </div>
             </div>
 
+            <!-- Actions Section for Driver Reports -->
             <div
-              v-if="
-                selectedFeedback.type === 'DRIVER' &&
-                selectedFeedback.driverRole !== 'suspended'
-              "
-              class="flex justify-end gap-2 mt-4"
+              v-if="selectedFeedback.type === 'DRIVER'"
+              class="border-t pt-4 mt-4"
             >
-              <Button
-                label="Suspend Driver"
-                icon="pi pi-ban"
-                severity="danger"
-                @click="handleDriverAction(selectedFeedback, 'Suspend')"
-              />
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-600">
+                  Driver Management Actions
+                </div>                <div class="flex gap-2">
+                  <Button
+                    v-if="
+                      !selectedFeedback.driverRoleStatus ||
+                      selectedFeedback.driverRoleStatus !== 'suspended'
+                    "
+                    label="Suspend Driver"
+                    icon="pi pi-ban"
+                    severity="danger"
+                    @click="handleDriverAction(selectedFeedback, 'Suspend')"
+                  />
+                  <template v-else>
+                    <Button
+                      label="Unsuspend Driver"
+                      icon="pi pi-check-circle"
+                      severity="success"
+                      @click="handleDriverAction(selectedFeedback, 'Unsuspend')"
+                    />
+                    <span
+                      class="px-3 py-2 rounded text-sm bg-red-100 text-red-800 font-medium flex items-center"
+                    >
+                      Driver is Suspended
+                    </span>
+                  </template>
+                </div>
+              </div>
             </div>
           </div>
         </Dialog>

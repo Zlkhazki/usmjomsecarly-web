@@ -114,7 +114,6 @@ export const ratingsService = {
       };
     }
   },
-
   // Suspend a user
   async suspendUser(userId, reason = "") {
     try {
@@ -128,6 +127,24 @@ export const ratingsService = {
       return {
         success: false,
         message: error.response?.data?.message || "Failed to suspend user",
+        error: error.response?.data?.error || error.message,
+      };
+    }
+  },
+
+  // Unsuspend a user
+  async unsuspendUser(userId, reason = "") {
+    try {
+      const response = await api.put(`/ratings/unsuspend/${userId}`, { reason });
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Failed to unsuspend user",
         error: error.response?.data?.error || error.message,
       };
     }
